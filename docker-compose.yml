@@ -1,0 +1,208 @@
+version: "3.9"
+
+# ─────────────────────────────────────────────
+#  CrimeGPT — Full Production Stack
+#  Gujarat Police Cyber Crime Branch
+# ─────────────────────────────────────────────
+
+services:
+
+  # ── Frontend (Next.js) ─────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://backend:8000/api/v1
+      NEXT_PUBLIC_APP_NAME: CrimeGPT
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - crimegpt_net
+
+  # ── Backend (FastAPI) ──────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://crimegpt:crimegpt_pass@db:5432/crimegpt_db
+      REDIS_URL: redis://redis:6379/0
+      CHROMA_HOST: chromadb
+      CHROMA_PORT: 8000
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: crimegpt_admin
+      MINIO_SECRET_KEY: crimegpt_secret_2024
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      DEBUG: "false"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+    restart: unless-stopped
+    networks:
+      - crimegpt_net
+
+  # ── Celery Worker ──────────────────────────
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: celery -A app.worker worker --loglevel=info -Q default,ai,documents,notifications
+    environment:
+      DATABASE_URL: postgresql+asyncpg://crimegpt:crimegpt_pass@db:5432/crimegpt_db
+      REDIS_URL: redis://redis:6379/0
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+    depends_on:
+      - backend
+      - redis
+    restart: unless-stopped
+    networks:
+      - crimegpt_net
+
+  # ── PostgreSQL ─────────────────────────────
+  db:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: crimegpt
+      POSTGRES_PASSWORD: crimegpt_pass
+      POSTGRES_DB: crimegpt_db
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init_db.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U crimegpt -d crimegpt_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    networks:
+      - crimegpt_net
+
+  # ── Redis ──────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - crimegpt_net
+
+  # ── ChromaDB (Vector Store) ────────────────
+  chromadb:
+    image: chromadb/chroma:0.5.0
+    ports:
+      - "8001:8000"
+    volumes:
+      - chroma_data:/chroma/chroma
+    environment:
+      CHROMA_SERVER_AUTH_CREDENTIALS_PROVIDER: ""
+      ALLOW_RESET: "true"
+    restart: unless-stopped
+    networks:
+      - crimegpt_net
+
+  # ── MinIO (Evidence Storage) ───────────────
+  minio:
+    image: minio/minio:RELEASE.2024-06-04T19-20-08Z
+    ports:
+      - "9000:9000"
+      - "9001:9001"    # MinIO Console
+    environment:
+      MINIO_ROOT_USER: crimegpt_admin
+      MINIO_ROOT_PASSWORD: crimegpt_secret_2024
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - crimegpt_net
+
+  # ── Nginx Reverse Proxy ────────────────────
+  nginx:
+    image: nginx:1.27-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - frontend
+      - backend
+    restart: unless-stopped
+    networks:
+      - crimegpt_net
+
+  # ── Flower (Celery Monitor) ────────────────
+  flower:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: celery -A app.worker flower --port=5555
+    ports:
+      - "5555:5555"
+    environment:
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      - redis
+    restart: unless-stopped
+    networks:
+      - crimegpt_net
+
+  # ── PgAdmin ────────────────────────────────
+  pgadmin:
+    image: dpage/pgadmin4:8.7
+    ports:
+      - "5050:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@crimegpt.in
+      PGADMIN_DEFAULT_PASSWORD: admin1234
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - db
+    restart: unless-stopped
+    networks:
+      - crimegpt_net
+    profiles:
+      - dev
+
+# ── Volumes ─────────────────────────────────
+volumes:
+  postgres_data:
+  redis_data:
+  chroma_data:
+  minio_data:
+  pgadmin_data:
+
+# ── Networks ─────────────────────────────────
+networks:
+  crimegpt_net:
+    driver: bridge

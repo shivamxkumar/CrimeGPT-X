@@ -1,0 +1,83 @@
+# CrimeGPT — .gitignore
+# ─────────────────────────────────────────────────────────────
+
+# Environment / secrets
+.env
+.env.local
+.env.prod
+*.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+dist/
+build/
+*.egg-info/
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Node.js
+node_modules/
+.next/
+.nuxt/
+dist/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Docker
+docker-compose.override.yml
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Uploads / evidence (never commit actual evidence)
+uploads/
+/tmp/evidence/
+*.pdf
+*.jpg
+*.jpeg
+*.png
+*.mp4
+*.mp3
+
+# Alembic
+alembic/versions/*.pyc
+
+# SSL certificates
+docker/nginx/ssl/
+*.pem
+*.key
+*.crt
+
+# Logs
+logs/
+*.log
+
+# Testing artifacts
+.coverage
+.pytest_cache/
+test-results/
+
+# Production secrets
+secrets/
+credentials/
