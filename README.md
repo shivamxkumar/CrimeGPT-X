@@ -1,4 +1,4 @@
-# 🔍 CrimeGPT — AI-Powered Crime Documentation & Legal Intelligence Platform
+# 🔍 CrimeGPT-X — AI-Powered Crime Documentation & Legal Intelligence Platform
 
 > **"From FIR to Arrest — One Intelligent Investigation Platform"**
 >
@@ -25,10 +25,10 @@
 
 ## Overview
 
-CrimeGPT is a full-stack AI-powered police investigation platform that eliminates repetitive data entry and automates legal documentation for cyber crime cases. Officers enter case data **once** — CrimeGPT automatically generates all required legal documents, suggests applicable BNS/IT Act sections, retrieves landmark judgments, and maintains a timestamped investigation diary.
+CrimeGPT-X is a full-stack AI-powered police investigation platform that eliminates repetitive data entry and automates legal documentation for cyber crime cases. Officers enter case data **once** — CrimeGPT-X automatically generates all required legal documents, suggests applicable BNS/IT Act sections, retrieves landmark judgments, and maintains a timestamped investigation diary.
 
 ### Core Problem Solved
-Police officers repeatedly enter the same information across multiple legal documents (chargesheet, remand request, panchanama, medical letter, etc.). CrimeGPT maintains a **single source of truth** per case and auto-generates all required documents.
+Police officers repeatedly enter the same information across multiple legal documents (chargesheet, remand request, panchanama, medical letter, etc.). CrimeGPT-X maintains a **single source of truth** per case and auto-generates all required documents.
 
 ---
 
@@ -166,7 +166,7 @@ docker compose exec backend python scripts/seed_chroma.py
 ### 3. Access the Application
 | Service | URL |
 |---------|-----|
-| **CrimeGPT App** | http://localhost |
+| **CrimeGPT-X App** | http://localhost |
 | Backend API | http://localhost:8000/api/docs |
 | MinIO Console | http://localhost:9001 |
 | pgAdmin | http://localhost:5050 |
@@ -517,7 +517,7 @@ crimegpt/
 
 Built for **KANAD S.H.I.E.L.D. 2026** — National Cybersecurity & Law Enforcement Hackathon
 
-**Problem Statement:** CrimeGPT – AI-Powered Automation for Crime Documentation and Legal Intelligence
+**Problem Statement:** CrimeGPT-X – AI-Powered Automation for Crime Documentation and Legal Intelligence
 
 **Demo Target:** Ahmedabad Cyber Crime Branch, Gujarat Police
 

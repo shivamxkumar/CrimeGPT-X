@@ -1,4 +1,4 @@
-name: CrimeGPT CI/CD Pipeline
+name: CrimeGPT-X CI/CD Pipeline
 
 on:
   push:

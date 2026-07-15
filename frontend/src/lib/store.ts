@@ -1,5 +1,5 @@
 /**
- * CrimeGPT — Global Auth Store (Zustand)
+ * CrimeGPT-X — Global Auth Store (Zustand)
  */
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'

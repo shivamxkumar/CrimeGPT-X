@@ -1,5 +1,5 @@
 """
-Pydantic Schemas — CrimeGPT API
+Pydantic Schemas — CrimeGPT-X API
 Request / Response models with validation
 """
 from pydantic import BaseModel, EmailStr, Field, validator
@@ -76,6 +76,10 @@ class CaseCreate(BaseModel):
     incident_description: str = Field(..., min_length=20)
     incident_location: Optional[str]
     incident_date: Optional[datetime]
+
+    @validator('victim_email', pre=True)
+    def _empty_email_to_none(cls, v):
+        return v or None
 
 class CaseUpdate(BaseModel):
     fir_number: Optional[str]

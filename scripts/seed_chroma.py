@@ -1,5 +1,5 @@
 """
-CrimeGPT — Vector Database Seeder
+CrimeGPT-X — Vector Database Seeder
 Seeds ChromaDB with landmark judgments and BNS sections
 Run: python scripts/seed_chroma.py
 """

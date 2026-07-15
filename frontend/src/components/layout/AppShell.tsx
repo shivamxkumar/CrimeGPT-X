@@ -20,8 +20,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       <Topbar />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
-        <main className="flex-1 overflow-y-auto bg-bg-base p-6">
-          {children}
+        <main className="flex-1 overflow-y-auto cyber-bg p-6">
+          <div className="relative z-10">{children}</div>
         </main>
       </div>
     </div>

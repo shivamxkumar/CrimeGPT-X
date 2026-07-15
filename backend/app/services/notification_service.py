@@ -1,5 +1,5 @@
 """
-CrimeGPT — Notification Service
+CrimeGPT-X — Notification Service
 In-app + email notifications for case events and deadlines
 """
 import logging

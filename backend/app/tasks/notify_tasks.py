@@ -17,7 +17,7 @@ def send_email(to: str, subject: str, body: str, html_body: str = None):
         return {"skipped": True}
     try:
         msg = MIMEMultipart("alternative")
-        msg["Subject"] = f"[CrimeGPT] {subject}"
+        msg["Subject"] = f"[CrimeGPT-X] {subject}"
         msg["From"] = settings.SMTP_USER
         msg["To"] = to
         msg.attach(MIMEText(body, "plain"))

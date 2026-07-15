@@ -13,7 +13,7 @@ export default function RootPage() {
     <div className="min-h-screen bg-bg-base flex items-center justify-center">
       <div className="flex flex-col items-center gap-4">
         <div className="w-12 h-12 border-2 border-accent-blue border-t-transparent rounded-full animate-spin" />
-        <div className="text-text-muted text-sm">Loading CrimeGPT...</div>
+        <div className="text-text-muted text-sm">Loading CrimeGPT-X...</div>
       </div>
     </div>
   )

@@ -4,7 +4,7 @@ import secrets
 
 class Settings(BaseSettings):
     # App
-    APP_NAME: str = "CrimeGPT"
+    APP_NAME: str = "CrimeGPT-X"
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = False
     SECRET_KEY: str = secrets.token_urlsafe(32)

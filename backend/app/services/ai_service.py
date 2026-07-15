@@ -255,7 +255,7 @@ class AILegalService:
         case_context: Optional[Dict[str, Any]] = None
     ) -> str:
         client = get_anthropic()
-        system = """You are CrimeGPT, the AI legal assistant for Gujarat Police Cyber Crime Branch.
+        system = """You are CrimeGPT-X, the AI legal assistant for Gujarat Police Cyber Crime Branch.
 
 You help Investigation Officers with:
 - BNS / BNSS / BSA sections and their applicability

@@ -1,5 +1,5 @@
 """
-CrimeGPT - AI-Powered Crime Documentation & Legal Intelligence Platform
+CrimeGPT-X - AI-Powered Crime Documentation & Legal Intelligence Platform
 FastAPI Backend — Ahmedabad Cyber Crime Branch
 """
 from fastapi import FastAPI, Request
@@ -17,7 +17,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(
-    title="CrimeGPT API",
+    title="CrimeGPT-X API",
     description="AI-Powered Crime Documentation & Legal Intelligence Platform",
     version="1.0.0",
     docs_url="/api/docs",
@@ -60,16 +60,16 @@ app.include_router(api_router, prefix="/api/v1")
 async def startup():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    logger.info("CrimeGPT API started successfully")
+    logger.info("CrimeGPT-X API started successfully")
 
 @app.get("/health")
 async def health():
-    return {"status": "healthy", "service": "CrimeGPT API", "version": "1.0.0"}
+    return {"status": "healthy", "service": "CrimeGPT-X API", "version": "1.0.0"}
 
 @app.get("/")
 async def root():
     return {
-        "message": "CrimeGPT API",
+        "message": "CrimeGPT-X API",
         "tagline": "From FIR to Arrest – One Intelligent Investigation Platform",
         "docs": "/api/docs"
     }

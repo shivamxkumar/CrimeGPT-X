@@ -1,5 +1,5 @@
 """
-CrimeGPT — Semantic Search Service
+CrimeGPT-X — Semantic Search Service
 Combines ChromaDB vector search with PostgreSQL full-text search
 """
 import logging

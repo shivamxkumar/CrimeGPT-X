@@ -1,4 +1,4 @@
-// ─── CrimeGPT Type Definitions ───────────────────────────────
+// ─── CrimeGPT-X Type Definitions ───────────────────────────────
 
 export type UserRole = 'io' | 'sho' | 'legal' | 'admin'
 export type CaseStatus = 'registered' | 'active' | 'in_review' | 'chargesheet' | 'court' | 'closed'

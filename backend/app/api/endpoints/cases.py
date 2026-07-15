@@ -37,6 +37,7 @@ async def create_case(
         **payload.model_dump(),
     )
     db.add(case)
+    await db.flush()  # populate case.id (uuid4 default) before it's referenced below
 
     # Auto-create first diary entry
     db.add(DiaryEntry(

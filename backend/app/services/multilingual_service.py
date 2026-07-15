@@ -1,5 +1,5 @@
 """
-CrimeGPT — Multilingual Service
+CrimeGPT-X — Multilingual Service
 Handles translation between English, Hindi, Gujarati
 Uses deep_translator for document translation
 """

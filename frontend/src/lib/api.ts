@@ -1,5 +1,5 @@
 /**
- * CrimeGPT API Client
+ * CrimeGPT-X API Client
  * Axios-based with JWT auth, error handling, and audit-friendly logging
  */
 import axios, { AxiosInstance, AxiosError } from 'axios'
@@ -24,6 +24,21 @@ api.interceptors.request.use((config) => {
   return config
 })
 
+// FastAPI validation errors (422) return `detail` as an array of {type,loc,msg,...}
+// objects rather than a string — normalize whatever shape it is into plain text so
+// toast.error() never receives a non-string/ReactNode (which would crash rendering).
+function extractErrorMessage(detail: unknown, fallback: string): string {
+  if (!detail) return fallback
+  if (typeof detail === 'string') return detail
+  if (Array.isArray(detail)) {
+    return detail
+      .map((d) => (typeof d === 'string' ? d : (d as any)?.msg || JSON.stringify(d)))
+      .join('; ')
+  }
+  if (typeof detail === 'object') return (detail as any).msg || JSON.stringify(detail)
+  return String(detail)
+}
+
 // Handle auth errors globally
 api.interceptors.response.use(
   (response) => response,
@@ -34,7 +49,7 @@ api.interceptors.response.use(
         window.location.href = '/login'
       }
     }
-    const message = (error.response?.data as any)?.detail || error.message || 'Request failed'
+    const message = extractErrorMessage((error.response?.data as any)?.detail, error.message || 'Request failed')
     if (error.response?.status !== 401) {
       toast.error(message)
     }
@@ -55,9 +70,9 @@ export const authAPI = {
 
 // ── Cases ─────────────────────────────────────────────────────
 export const casesAPI = {
-  list: (params?: any) => api.get('/cases', { params }),
+  list: (params?: any) => api.get('/cases/', { params }),
   get: (id: string) => api.get(`/cases/${id}`),
-  create: (data: any) => api.post('/cases', data),
+  create: (data: any) => api.post('/cases/', data),
   update: (id: string, data: any) => api.patch(`/cases/${id}`, data),
   stats: () => api.get('/cases/stats/summary'),
 }
@@ -125,6 +140,6 @@ export const adminAPI = {
 
 // ── Notifications ─────────────────────────────────────────────
 export const notificationsAPI = {
-  list: () => api.get('/notifications'),
+  list: () => api.get('/notifications/'),
   markRead: (id: string) => api.patch(`/notifications/${id}/read`),
 }

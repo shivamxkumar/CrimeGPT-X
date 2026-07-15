@@ -1,5 +1,5 @@
 """
-CrimeGPT Celery Worker
+CrimeGPT-X Celery Worker
 Handles: AI analysis jobs, document generation, email notifications
 """
 from celery import Celery

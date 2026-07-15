@@ -1,5 +1,5 @@
 /**
- * CrimeGPT — Custom React Hooks
+ * CrimeGPT-X — Custom React Hooks
  */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { casesAPI, evidenceAPI, diaryAPI, docsAPI, aiAPI, analyticsAPI } from '@/lib/api'

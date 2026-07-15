@@ -1,5 +1,5 @@
 """
-CrimeGPT Backend Tests
+CrimeGPT-X Backend Tests
 Run: pytest tests/ -v --asyncio-mode=auto
 """
 import pytest
@@ -178,7 +178,7 @@ class TestHealth:
     async def test_root_endpoint(self, client: AsyncClient):
         r = await client.get("/")
         assert r.status_code == 200
-        assert "CrimeGPT" in r.json()["message"]
+        assert "CrimeGPT-X" in r.json()["message"]
 
 
 # ── Analytics Tests ───────────────────────────────────────────

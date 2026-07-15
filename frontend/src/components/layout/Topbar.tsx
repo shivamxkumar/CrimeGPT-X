@@ -2,6 +2,7 @@
 import { Bell, Search } from 'lucide-react'
 import { useAuthStore } from '@/lib/store'
 import { useState } from 'react'
+import { Logo } from '@/components/ui/Logo'
 
 export default function Topbar() {
   const { user } = useAuthStore()
@@ -10,12 +11,12 @@ export default function Topbar() {
   const initials = user?.name?.split(' ').map(w => w[0]).join('').slice(0, 2) || 'U'
 
   return (
-    <header className="h-13 flex-shrink-0 flex items-center px-5 gap-4 bg-bg-surface border-b border-white/[0.07] z-50">
+    <header className="h-13 flex-shrink-0 flex items-center px-5 gap-4 bg-bg-surface border-b border-white/[0.07] cyber-edge z-50">
       {/* Logo */}
-      <div className="flex items-center gap-2.5">
-        <div className="w-8 h-8 rounded-lg bg-accent-blue flex items-center justify-center text-lg">🔍</div>
+      <div className="flex items-center gap-2.5 glitch-hover">
+        <Logo size={30} />
         <div>
-          <div className="text-sm font-bold tracking-tight leading-tight">CrimeGPT</div>
+          <div className="text-sm font-bold tracking-tight leading-tight neon-text">CrimeGPT-X</div>
           <div className="text-[9px] text-text-muted tracking-widest uppercase">Police Intelligence Platform</div>
         </div>
       </div>

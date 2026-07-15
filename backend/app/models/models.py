@@ -1,5 +1,5 @@
 """
-CrimeGPT Database Models
+CrimeGPT-X Database Models
 PostgreSQL schema via SQLAlchemy ORM
 """
 import uuid

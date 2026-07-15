@@ -1,5 +1,5 @@
 """
-CrimeGPT API v1 — All Route Registrations
+CrimeGPT-X API v1 — All Route Registrations
 """
 from fastapi import APIRouter
 from app.api.endpoints import (

@@ -16,7 +16,7 @@ def export_pdf(document_id: str, html_content: str):
         buf = io.BytesIO()
         doc = SimpleDocTemplate(buf, pagesize=A4)
         styles = getSampleStyleSheet()
-        story = [Paragraph("CrimeGPT Generated Document", styles['Title'])]
+        story = [Paragraph("CrimeGPT-X Generated Document", styles['Title'])]
         doc.build(story)
         logger.info(f"PDF exported for document {document_id}")
         return {"document_id": document_id, "size": buf.tell()}
@@ -31,7 +31,7 @@ def export_docx(document_id: str, content: dict):
     try:
         from docx import Document
         doc = Document()
-        doc.add_heading(content.get("title", "CrimeGPT Document"), 0)
+        doc.add_heading(content.get("title", "CrimeGPT-X Document"), 0)
         for para in content.get("paragraphs", []):
             doc.add_paragraph(para)
         import io
