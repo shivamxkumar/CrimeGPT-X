@@ -269,7 +269,7 @@ class DiaryEntry(Base):
     entry_type = Column(Enum(DiaryEntryType), nullable=False)
     title = Column(String(300), nullable=False)
     description = Column(Text)
-    metadata = Column(JSONB, default=dict)
+    entry_metadata = Column("metadata", JSONB, default=dict)
     is_automated = Column(Boolean, default=False)  # True = system-generated
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())

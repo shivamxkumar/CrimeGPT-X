@@ -100,7 +100,7 @@ async def generate_document(
         title=f"Document Generated: {title}",
         description=f"Generated in {elapsed}ms using AI engine",
         is_automated=True,
-        metadata={"doc_type": payload.doc_type.value, "generation_ms": elapsed},
+        entry_metadata={"doc_type": payload.doc_type.value, "generation_ms": elapsed},
     ))
 
     db.add(AuditLog(

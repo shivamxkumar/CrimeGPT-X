@@ -55,7 +55,7 @@ async def analyze_fir(
                 description=f"AI identified {len(result.sections)} applicable sections. "
                             f"Crime type: {result.crime_type_detected}",
                 is_automated=True,
-                metadata={"sections_count": len(result.sections), "model": result.model_used},
+                entry_metadata={"sections_count": len(result.sections), "model": result.model_used},
             ))
 
             db.add(AuditLog(

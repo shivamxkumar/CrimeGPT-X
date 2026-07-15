@@ -111,7 +111,7 @@ services:
 
   # ── ChromaDB (Vector Store) ────────────────
   chromadb:
-    image: chromadb/chroma:0.5.0
+    image: chromadb/chroma:0.5.23
     ports:
       - "8001:8000"
     volumes:
@@ -136,7 +136,7 @@ services:
     volumes:
       - minio_data:/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      test: ["CMD", "mc", "ready", "local"]
       interval: 10s
       timeout: 5s
       retries: 5
