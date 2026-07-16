@@ -28,4 +28,10 @@ celery_app.conf.update(
     task_soft_time_limit=240, # Soft limit: warn at 4 min
     worker_prefetch_multiplier=1,
     task_acks_late=True,
+    beat_schedule={
+        "check-court-deadlines-every-6-hours": {
+            "task": "app.tasks.notify_tasks.send_deadline_alerts",
+            "schedule": 6 * 60 * 60,
+        },
+    },
 )

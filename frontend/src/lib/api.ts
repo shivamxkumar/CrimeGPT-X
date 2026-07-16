@@ -98,11 +98,18 @@ export const aiAPI = {
     api.post('/ai/cyber-analyze', { content_type, content }),
 }
 
+// ── Judgments (RAG) ────────────────────────────────────────────
+export const judgmentsAPI = {
+  search: (q: string) => api.get('/ai/judgments/search', { params: { q } }),
+}
+
 // ── Documents ────────────────────────────────────────────────
 export const docsAPI = {
   generate: (case_id: string, doc_type: string, language = 'en') =>
     api.post('/documents/generate', { case_id, doc_type, language }),
-  listForCase: (case_id: string) => api.get(`/documents/${case_id}`),
+  listForCase: (case_id: string) => api.get(`/documents/by-case/${case_id}`),
+  exportPdf: (doc_id: string) => api.get(`/documents/${doc_id}/export/pdf`, { responseType: 'blob' }),
+  exportDocx: (doc_id: string) => api.get(`/documents/${doc_id}/export/docx`, { responseType: 'blob' }),
 }
 
 // ── Evidence ─────────────────────────────────────────────────
@@ -129,6 +136,8 @@ export const diaryAPI = {
 export const analyticsAPI = {
   overview: () => api.get('/analytics/overview'),
   crimeDistribution: () => api.get('/analytics/crime-distribution'),
+  weeklyTrend: () => api.get('/analytics/weekly-trend'),
+  documentStats: () => api.get('/analytics/document-stats'),
 }
 
 // ── Admin ────────────────────────────────────────────────────
@@ -136,10 +145,16 @@ export const adminAPI = {
   users: () => api.get('/admin/users'),
   auditLogs: () => api.get('/admin/audit-logs'),
   toggleUser: (id: string) => api.patch(`/admin/users/${id}/toggle-active`),
+  systemStatus: () => api.get('/admin/system-status'),
 }
 
 // ── Notifications ─────────────────────────────────────────────
 export const notificationsAPI = {
   list: () => api.get('/notifications/'),
   markRead: (id: string) => api.patch(`/notifications/${id}/read`),
+}
+
+// ── Diary ─────────────────────────────────────────────────────
+export const diaryRecentAPI = {
+  recent: (limit = 10) => api.get('/diary/recent', { params: { limit } }),
 }

@@ -1,47 +1,30 @@
 'use client'
 import AppShell from '@/components/layout/AppShell'
 import { PageHeader, StatusBadge, PriorityBadge, LegalSectionCard, TimelineItem, Alert, Spinner } from '@/components/ui'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
+import { useState } from 'react'
 import { casesAPI } from '@/lib/api'
-import { CRIME_CATEGORY_LABELS } from '@/types'
+import { useUpdateCase } from '@/hooks'
+import { CRIME_CATEGORY_LABELS, CaseStatus, CasePriority } from '@/types'
 import Link from 'next/link'
 import { formatCurrency, formatDate, formatDateTime } from '@/lib/utils'
 
-const MOCK_CASE = {
-  id: '1', case_id: 'CC/2024/0847', fir_number: 'FIR-0938/24',
-  police_station: 'Ahmedabad Cyber Crime Branch',
-  crime_category: 'upi_fraud', status: 'active', priority: 'high',
-  victim_name: 'Ramesh Kumar Patel', victim_phone: '+91 9825647382',
-  victim_address: '14, Saraswati Society, Naranpura, Ahmedabad – 380013',
-  victim_age: 42, amount_defrauded: 150000,
-  accused_name: 'Mehul Rathod', accused_phone: '+91 7841XXXXXX',
-  accused_address: '7-B, Vasudev Nagar, Adajan, Surat – 395009',
-  accused_mode: 'Remote Access Tool (AnyDesk) + WhatsApp impersonation',
-  incident_description: 'Complainant received a WhatsApp call claiming to be SBI KYC officer. Was asked to install AnyDesk. After installation, accused gained remote access and transferred ₹1,50,000 via unauthorized UPI transactions from SBI account ending 4782.',
-  incident_location: 'Naranpura, Ahmedabad',
-  incident_date: '2024-06-12T08:30:00Z',
-  ai_sections: [
-    { section: 'BNS 318', title: 'Cheating', description: 'Accused deceived victim by impersonating SBI officer', confidence: 93, act: 'BNS' },
-    { section: 'BNS 319', title: 'Cheating by Personation', description: 'Falsely claimed to be bank official', confidence: 91, act: 'BNS' },
-    { section: 'IT Act 66C', title: 'Identity Theft', description: 'Unauthorized use of banking credentials', confidence: 88, act: 'IT Act' },
-    { section: 'IT Act 66D', title: 'Computer Resource Cheating', description: 'Used AnyDesk to commit fraud', confidence: 86, act: 'IT Act' },
-  ],
-  io_officer_id: '1',
-  created_at: '2024-06-12T09:00:00Z', updated_at: '2024-06-14T11:00:00Z',
-}
-
 export default function CaseDetailPage() {
   const { id } = useParams<{ id: string }>()
-  const router = useRouter()
-  const { data: caseData, isLoading } = useQuery({
+  const { data: c, isLoading, isError } = useQuery({
     queryKey: ['case', id],
     queryFn: () => casesAPI.get(id).then(r => r.data),
-    placeholderData: MOCK_CASE,
+    enabled: !!id,
   })
-  const c = caseData || MOCK_CASE
+  const updateCase = useUpdateCase(id)
+  const [pendingStatus, setPendingStatus] = useState<CaseStatus | null>(null)
+  const [pendingPriority, setPendingPriority] = useState<CasePriority | null>(null)
 
   if (isLoading) return <AppShell><div className="flex justify-center py-20"><Spinner size="lg" /></div></AppShell>
+  if (isError || !c) return <AppShell><Alert variant="error" icon="⚠️">Case not found, or failed to load — check the backend connection.</Alert></AppShell>
+
+  const daysOpen = Math.max(0, Math.floor((Date.now() - new Date(c.created_at).getTime()) / 86400000))
 
   return (
     <AppShell>
@@ -99,13 +82,19 @@ export default function CaseDetailPage() {
           </div>
 
           {/* AI Sections */}
-          {c.ai_sections?.length > 0 && (
+          {c.ai_sections?.length > 0 ? (
             <div className="card">
               <div className="flex items-center justify-between mb-3">
                 <div className="font-semibold text-sm">⚖️ AI Legal Sections</div>
                 <Link href="/legal" className="btn-secondary text-xs px-3 py-1.5">Re-analyze →</Link>
               </div>
               {c.ai_sections.map((s: any, i: number) => <LegalSectionCard key={i} section={s} />)}
+            </div>
+          ) : (
+            <div className="card">
+              <div className="font-semibold text-sm mb-2">⚖️ AI Legal Sections</div>
+              <div className="text-sm text-text-secondary mb-3">This case hasn't been analyzed yet.</div>
+              <Link href="/legal" className="btn-primary text-sm">🤖 Run AI Legal Analysis</Link>
             </div>
           )}
 
@@ -125,11 +114,14 @@ export default function CaseDetailPage() {
         <div className="space-y-4">
           <div className="card">
             <div className="font-semibold text-sm mb-4">📅 Case Timeline</div>
-            <TimelineItem title="Case Registered" description="FIR received and case created" time={formatDateTime(c.created_at)} status="done" />
-            <TimelineItem title="AI Analysis Done" description={`${c.ai_sections?.length || 0} sections identified`} time={formatDateTime(c.created_at)} status="done" />
-            <TimelineItem title="Evidence Upload" description="4 files, SHA-256 verified" time="12 Jun 2024, 11:00" status="done" />
-            <TimelineItem title="Accused Arrested" description="Panchanama completed" time="14 Jun 2024, 10:30" status="warn" />
-            <TimelineItem title="Court Submission" description="Chargesheet pending" time="⏳ Due by 14 Aug 2024" status="pending" />
+            <TimelineItem title="Case Registered" description={`FIR ${c.fir_number || 'pending'} received and case created`} time={formatDateTime(c.created_at)} status="done" />
+            {c.ai_analyzed_at && (
+              <TimelineItem title="AI Analysis Done" description={`${c.ai_sections?.length || 0} sections identified`} time={formatDateTime(c.ai_analyzed_at)} status="done" />
+            )}
+            {c.updated_at && c.updated_at !== c.created_at && (
+              <TimelineItem title="Case Last Updated" description="Case details or status changed" time={formatDateTime(c.updated_at)} status="done" />
+            )}
+            <div className="text-xs text-text-muted mt-2">See the full audit trail in <Link href="/diary" className="text-accent-blue">Case Diary</Link>.</div>
           </div>
 
           <div className="card">
@@ -137,7 +129,7 @@ export default function CaseDetailPage() {
             <div className="space-y-2">
               <div>
                 <label className="label block mb-1">Update Status</label>
-                <select className="input w-full text-sm" defaultValue={c.status}>
+                <select className="input w-full text-sm" defaultValue={c.status} onChange={e => setPendingStatus(e.target.value as CaseStatus)}>
                   <option value="registered">Registered</option>
                   <option value="active">Active</option>
                   <option value="in_review">In Review</option>
@@ -148,25 +140,36 @@ export default function CaseDetailPage() {
               </div>
               <div>
                 <label className="label block mb-1">Update Priority</label>
-                <select className="input w-full text-sm" defaultValue={c.priority}>
+                <select className="input w-full text-sm" defaultValue={c.priority} onChange={e => setPendingPriority(e.target.value as CasePriority)}>
                   <option value="low">Low</option>
                   <option value="medium">Medium</option>
                   <option value="high">High</option>
                   <option value="critical">Critical</option>
                 </select>
               </div>
-              <button className="btn-primary w-full justify-center text-sm mt-1">Save Changes</button>
+              <button
+                className="btn-primary w-full justify-center text-sm mt-1"
+                disabled={updateCase.isPending || (!pendingStatus && !pendingPriority)}
+                onClick={() => {
+                  const payload: Record<string, string> = {}
+                  if (pendingStatus) payload.status = pendingStatus
+                  if (pendingPriority) payload.priority = pendingPriority
+                  updateCase.mutate(payload, { onSuccess: () => { setPendingStatus(null); setPendingPriority(null) } })
+                }}
+              >
+                {updateCase.isPending ? 'Saving…' : 'Save Changes'}
+              </button>
             </div>
           </div>
 
           <div className="card">
             <div className="font-semibold text-sm mb-2">📊 Case Stats</div>
             <div className="space-y-1.5 text-xs text-text-secondary">
-              <div className="flex justify-between"><span>Evidence Files</span><span className="font-semibold text-text-primary">5</span></div>
-              <div className="flex justify-between"><span>Documents Generated</span><span className="font-semibold text-text-primary">3</span></div>
-              <div className="flex justify-between"><span>Diary Entries</span><span className="font-semibold text-text-primary">8</span></div>
-              <div className="flex justify-between"><span>Witnesses</span><span className="font-semibold text-text-primary">1</span></div>
-              <div className="flex justify-between"><span>Days Open</span><span className="font-semibold text-accent-amber">5 days</span></div>
+              <div className="flex justify-between"><span>Evidence Files</span><span className="font-semibold text-text-primary">{c.evidence_count}</span></div>
+              <div className="flex justify-between"><span>Documents Generated</span><span className="font-semibold text-text-primary">{c.document_count}</span></div>
+              <div className="flex justify-between"><span>Diary Entries</span><span className="font-semibold text-text-primary">{c.diary_count}</span></div>
+              <div className="flex justify-between"><span>Witnesses</span><span className="font-semibold text-text-primary">{c.witness_count}</span></div>
+              <div className="flex justify-between"><span>Days Open</span><span className="font-semibold text-accent-amber">{daysOpen} day{daysOpen !== 1 ? 's' : ''}</span></div>
             </div>
           </div>
         </div>

@@ -52,7 +52,7 @@ jobs:
         env:
           DATABASE_URL: postgresql+asyncpg://crimegpt:testpass@localhost:5432/crimegpt_test
           JWT_SECRET_KEY: test-secret-key-for-ci-only
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           python -m pytest tests/ -v --cov=app --cov-report=xml --cov-report=term-missing
 

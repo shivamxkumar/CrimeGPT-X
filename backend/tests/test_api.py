@@ -166,6 +166,43 @@ class TestCases:
         assert r.status_code == 200
         assert "total" in r.json()
 
+    async def test_get_case_by_slash_containing_case_id(self, client: AsyncClient, auth_token: str):
+        """Regression test: case_id values look like 'CC/2026/0001' — a bare
+        FastAPI path param doesn't match embedded slashes, and comparing a
+        non-UUID string against a UUID column raises a DBAPI error unless
+        guarded. Both bugs were invisible until real HTTP calls exercised them."""
+        headers = {"Authorization": f"Bearer {auth_token}"}
+        created = await client.post("/api/v1/cases/", json={
+            "crime_category": "phishing",
+            "victim_name": "Slash Test Victim",
+            "accused_name": "Unknown",
+            "incident_description": "Victim received a phishing email and entered banking credentials on a fake site.",
+        }, headers=headers)
+        case_id = created.json()["case_id"]
+        assert "/" in case_id
+
+        r = await client.get(f"/api/v1/cases/{case_id}", headers=headers)
+        assert r.status_code == 200
+        assert r.json()["case_id"] == case_id
+        assert "evidence_count" in r.json()
+
+        # /stats/summary must still resolve to the stats endpoint, not be
+        # swallowed by the greedy {case_id:path} case-lookup route.
+        stats = await client.get("/api/v1/cases/stats/summary", headers=headers)
+        assert stats.status_code == 200
+        assert "total" in stats.json()
+
+        r = await client.patch(f"/api/v1/cases/{case_id}", json={"priority": "critical"}, headers=headers)
+        assert r.status_code == 200
+        assert r.json()["priority"] == "critical"
+
+    async def test_get_case_unknown_id_returns_404_not_500(self, client: AsyncClient, auth_token: str):
+        """A case_id that is neither a real case_id nor a valid UUID must 404
+        cleanly, not raise a DBAPI error from comparing it against Case.id."""
+        r = await client.get("/api/v1/cases/CC/9999/9999",
+                             headers={"Authorization": f"Bearer {auth_token}"})
+        assert r.status_code == 404
+
 
 # ── Health Tests ──────────────────────────────────────────────
 

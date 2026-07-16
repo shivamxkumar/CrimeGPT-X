@@ -258,30 +258,20 @@ TEMPLATES = {
     <th style="padding:8px;border:1px solid #ddd">Condition</th>
     <th style="padding:8px;border:1px solid #ddd">Received By</th>
   </tr>
+  {% for item in evidence_items %}
   <tr>
-    <td style="padding:8px;border:1px solid #ddd;text-align:center">1</td>
-    <td style="padding:8px;border:1px solid #ddd">WhatsApp Chat Export</td>
-    <td style="padding:8px;border:1px solid #ddd">PDF</td>
-    <td style="padding:8px;border:1px solid #ddd;font-family:monospace;font-size:10px">a3f8c2d1e6b5f4a8</td>
-    <td style="padding:8px;border:1px solid #ddd">Verified</td>
+    <td style="padding:8px;border:1px solid #ddd;text-align:center">{{ loop.index }}</td>
+    <td style="padding:8px;border:1px solid #ddd">{{ item.original_name }}{% if item.description %} — {{ item.description }}{% endif %}</td>
+    <td style="padding:8px;border:1px solid #ddd">{{ item.mime_type or '—' }}</td>
+    <td style="padding:8px;border:1px solid #ddd;font-family:monospace;font-size:10px">{{ item.sha256_hash[:16] }}</td>
+    <td style="padding:8px;border:1px solid #ddd">{{ 'Verified' if item.is_verified else 'Pending Verification' }}</td>
     <td style="padding:8px;border:1px solid #ddd">{{ io_name }}</td>
   </tr>
+  {% else %}
   <tr>
-    <td style="padding:8px;border:1px solid #ddd;text-align:center">2</td>
-    <td style="padding:8px;border:1px solid #ddd">Bank Statement (SBI)</td>
-    <td style="padding:8px;border:1px solid #ddd">PDF</td>
-    <td style="padding:8px;border:1px solid #ddd;font-family:monospace;font-size:10px">b7d2e5f4a1c3b8d9</td>
-    <td style="padding:8px;border:1px solid #ddd">Verified</td>
-    <td style="padding:8px;border:1px solid #ddd">{{ io_name }}</td>
+    <td colspan="6" style="padding:8px;border:1px solid #ddd;text-align:center;color:#888">No evidence items uploaded for this case yet.</td>
   </tr>
-  <tr>
-    <td style="padding:8px;border:1px solid #ddd;text-align:center">3</td>
-    <td style="padding:8px;border:1px solid #ddd">UPI Transaction Screenshots (x2)</td>
-    <td style="padding:8px;border:1px solid #ddd">PNG</td>
-    <td style="padding:8px;border:1px solid #ddd;font-family:monospace;font-size:10px">c9a1b3e7d2f5a8c4</td>
-    <td style="padding:8px;border:1px solid #ddd">Verified</td>
-    <td style="padding:8px;border:1px solid #ddd">{{ io_name }}</td>
-  </tr>
+  {% endfor %}
 </table>
 
 <div style="font-size:12px;color:#555;margin-bottom:20px">
@@ -381,16 +371,13 @@ def render_document(doc_type: str, case_data: dict) -> str:
         "incident_description": case_data.get("incident_description", ""),
         "incident_location": case_data.get("incident_location", ""),
         "ai_sections": case_data.get("ai_sections", []),
+        "evidence_items": case_data.get("evidence_items", []),
         "io_name": case_data.get("io_name", "Investigating Officer"),
         "io_badge": case_data.get("io_badge", "—"),
     }
 
-    try:
-        template = jinja_env.from_string(template_str)
-        return template.render(**ctx)
-    except Exception as e:
-        logger.error(f"Template render failed for {doc_type}: {e}")
-        return f"<p>Error rendering document: {e}</p>"
+    template = jinja_env.from_string(template_str)
+    return template.render(**ctx)
 
 
 def _get_doc_title(doc_type: str) -> str:

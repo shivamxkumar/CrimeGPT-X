@@ -1,6 +1,6 @@
 FROM python:3.12-slim
 
-# System deps for OCR + PDF processing
+# System deps for OCR + PDF processing + WeasyPrint (HTML->PDF export)
 RUN apt-get update && apt-get install -y \
     build-essential \
     tesseract-ocr \
@@ -12,6 +12,14 @@ RUN apt-get update && apt-get install -y \
     libsm6 \
     libxext6 \
     libxrender-dev \
+    libpango-1.0-0 \
+    libpangocairo-1.0-0 \
+    libpangoft2-1.0-0 \
+    libcairo2 \
+    libgdk-pixbuf-2.0-0 \
+    libffi-dev \
+    shared-mime-info \
+    fonts-noto-core \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
@@ -35,4 +43,5 @@ USER crimegpt
 
 EXPOSE 8000
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4", "--loop", "uvloop"]
+# Shell form so ${PORT} expands — Railway injects a dynamic PORT at runtime.
+CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 4 --loop uvloop

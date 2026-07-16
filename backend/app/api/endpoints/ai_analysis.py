@@ -1,22 +1,22 @@
 """
 AI Legal Intelligence Endpoints
-- FIR analysis → BNS sections
+- FIR analysis → BNS/BNSS sections, entities, timeline, risk assessment
 - Judgment search (RAG)
-- Legal chat
+- Legal chat (question answering)
 - Cyber threat analysis
 """
-from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import StreamingResponse
+from fastapi import APIRouter, Depends, HTTPException, Query
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel
 
 from app.core.auth import get_current_user
 from app.models.models import User, Case, DiaryEntry, DiaryEntryType, AuditLog
 from app.core.database import get_db
-from app.services.ai_service import ai_legal_service
-from app.schemas.schemas import AIAnalysisRequest, AIAnalysisResponse
+from app.services.ai_service import ai_legal_service, AIServiceError, NO_JUDGMENTS_MESSAGE
+from app.schemas.schemas import AIAnalysisRequest, AIAnalysisResponse, Judgment
+from app.core.query_helpers import case_lookup_clause
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, or_
+from sqlalchemy import select
 
 router = APIRouter()
 
@@ -27,17 +27,20 @@ async def analyze_fir(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Analyze FIR text → suggest BNS sections + retrieve judgments"""
-    result = await ai_legal_service.analyze_fir(
-        fir_text=payload.fir_text,
-        case_id=payload.case_id,
-        language=payload.language,
-    )
+    """Analyze FIR text → BNS/BNSS sections, entities, timeline, risk, judgments"""
+    try:
+        result = await ai_legal_service.analyze_fir(
+            fir_text=payload.fir_text,
+            case_id=payload.case_id,
+            language=payload.language,
+        )
+    except AIServiceError as e:
+        raise HTTPException(status_code=502, detail=f"AI analysis failed: {e}")
 
     # Store results back to case if case_id provided
     if payload.case_id:
         case_result = await db.execute(
-            select(Case).where(or_(Case.case_id == payload.case_id, Case.id == payload.case_id))
+            select(Case).where(case_lookup_clause(payload.case_id))
         )
         case = case_result.scalar_one_or_none()
         if case:
@@ -81,11 +84,11 @@ async def legal_chat(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Conversational legal AI assistant"""
+    """Conversational legal AI assistant (question answering)"""
     case_context = None
     if payload.case_id:
         case_result = await db.execute(
-            select(Case).where(or_(Case.case_id == payload.case_id, Case.id == payload.case_id))
+            select(Case).where(case_lookup_clause(payload.case_id))
         )
         case = case_result.scalar_one_or_none()
         if case:
@@ -98,11 +101,27 @@ async def legal_chat(
                 "ai_sections": case.ai_sections,
             }
 
-    reply = await ai_legal_service.chat_with_legal_ai(
-        messages=payload.messages,
-        case_context=case_context,
-    )
+    try:
+        reply = await ai_legal_service.chat_with_legal_ai(
+            messages=payload.messages,
+            case_context=case_context,
+        )
+    except AIServiceError as e:
+        raise HTTPException(status_code=502, detail=f"AI chat failed: {e}")
     return {"reply": reply}
+
+
+@router.get("/judgments/search")
+async def search_judgments(
+    q: str = Query(..., min_length=2),
+    current_user: User = Depends(get_current_user),
+):
+    """Real semantic search over the ingested judgments corpus (RAG)."""
+    try:
+        judgments, message = await ai_legal_service.search_judgments(query=q)
+    except AIServiceError as e:
+        raise HTTPException(status_code=502, detail=f"Judgment search failed: {e}")
+    return {"judgments": judgments, "message": message}
 
 
 class CyberAnalysisRequest(BaseModel):
@@ -115,39 +134,7 @@ async def analyze_cyber_threat(
     current_user: User = Depends(get_current_user),
 ):
     """AI-powered cyber crime pattern detection"""
-    prompt = f"""Analyze this {payload.content_type} for cyber crime indicators:
-
-Content: {payload.content}
-
-Return JSON only:
-{{
-  "threat_level": "high|medium|low|none",
-  "crime_type": "string",
-  "indicators": ["indicator1", "indicator2"],
-  "applicable_sections": ["BNS 318", "IT Act 66C"],
-  "evidence_to_preserve": ["action1"],
-  "investigation_steps": ["step1"]
-}}"""
-
-    import anthropic
-    from app.core.config import settings
-
     try:
-        client = anthropic.AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
-        msg = await client.messages.create(
-            model=settings.AI_MODEL,
-            max_tokens=512,
-            messages=[{"role": "user", "content": prompt}],
-        )
-        import json
-        raw = msg.content[0].text
-        return json.loads(raw.replace("```json","").replace("```","").strip())
-    except Exception:
-        return {
-            "threat_level": "high",
-            "crime_type": "Phishing / Bank Impersonation",
-            "indicators": ["Suspicious domain", "Urgency language", "Asks for credentials"],
-            "applicable_sections": ["BNS 318", "BNS 319", "IT Act 66D"],
-            "evidence_to_preserve": ["Screenshot URL", "Network logs", "IP address"],
-            "investigation_steps": ["Issue 91 notice to registrar", "Trace hosting IP", "Alert CERT-In"],
-        }
+        return await ai_legal_service.analyze_cyber_content(payload.content_type, payload.content)
+    except AIServiceError as e:
+        raise HTTPException(status_code=502, detail=f"Cyber analysis failed: {e}")
