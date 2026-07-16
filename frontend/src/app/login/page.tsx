@@ -5,26 +5,12 @@ import { useAuthStore } from '@/lib/store'
 import { Spinner } from '@/components/ui'
 import { Logo } from '@/components/ui/Logo'
 import toast from 'react-hot-toast'
-import { Fingerprint, ShieldCheck, Scale, UserCog } from 'lucide-react'
-
-const ROLES = [
-  { key: 'io',    label: 'Investigation Officer', short: 'IO',    badge: 'AHM-24-IO-047',  icon: Fingerprint },
-  { key: 'sho',   label: 'Station House Officer', short: 'SHO',   badge: 'AHM-23-SHO-012', icon: ShieldCheck },
-  { key: 'legal', label: 'Legal Advisor',         short: 'Legal', badge: 'LEG-24-001',     icon: Scale },
-  { key: 'admin', label: 'Administrator',         short: 'Admin', badge: 'ADM-24-001',     icon: UserCog },
-] as const
 
 export default function LoginPage() {
-  const [role, setRole] = useState<typeof ROLES[number]['key']>('io')
-  const [badge, setBadge] = useState('AHM-24-IO-047')
-  const [password, setPassword] = useState('demo1234')
+  const [badge, setBadge] = useState('')
+  const [password, setPassword] = useState('')
   const { login, isLoading } = useAuthStore()
   const router = useRouter()
-
-  function selectRole(r: typeof ROLES[number]) {
-    setRole(r.key)
-    setBadge(r.badge)
-  }
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
@@ -64,32 +50,6 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Role selector */}
-          <div className="mb-5">
-            <label className="label block mb-2">Select Officer Role</label>
-            <div className="grid grid-cols-4 gap-2">
-              {ROLES.map(r => {
-                const Icon = r.icon
-                const active = role === r.key
-                return (
-                  <button
-                    key={r.key}
-                    type="button"
-                    onClick={() => selectRole(r)}
-                    className={`flex flex-col items-center gap-1.5 py-3 rounded-lg border text-[11px] font-semibold transition-all ${
-                      active
-                        ? 'bg-accent-cyan/10 border-accent-cyan/50 text-accent-cyan shadow-[0_0_12px_rgba(0,212,255,0.25)]'
-                        : 'bg-bg-card2 border-white/[0.07] text-text-muted hover:text-text-primary hover:border-white/15'
-                    }`}
-                  >
-                    <Icon size={18} />
-                    {r.short}
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <label className="label block mb-1.5">Officer Badge Number</label>
@@ -126,15 +86,8 @@ export default function LoginPage() {
             Confidential — Unauthorized access is a cognizable offence
           </div>
 
-          {/* Demo credentials */}
-          <div className="mt-4 p-3 rounded-lg bg-bg-card2 border border-white/[0.05]">
-            <div className="text-[10px] font-semibold text-text-muted uppercase tracking-wide mb-2">Demo Credentials — pick a role above, or use directly</div>
-            <div className="grid grid-cols-2 gap-2 text-[11px] text-text-secondary font-mono">
-              {ROLES.map(r => (
-                <div key={r.key}><span className="text-text-muted">{r.short}:</span> {r.badge}</div>
-              ))}
-            </div>
-            <div className="text-[10px] text-text-muted mt-1">Password: demo1234</div>
+          <div className="mt-4 p-3 rounded-lg bg-bg-card2 border border-white/[0.05] text-center">
+            <div className="text-[11px] text-text-muted">Need access? Contact your system administrator for credentials.</div>
           </div>
         </div>
       </div>
