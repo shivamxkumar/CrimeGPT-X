@@ -124,6 +124,8 @@ export const evidenceAPI = {
     })
   },
   list: (case_id: string) => api.get(`/evidence/${case_id}`),
+  download: (evidence_id: string) => api.get(`/evidence/item/${evidence_id}/download`, { responseType: 'blob' }),
+  delete: (evidence_id: string) => api.delete(`/evidence/item/${evidence_id}`),
 }
 
 // ── Diary ────────────────────────────────────────────────────

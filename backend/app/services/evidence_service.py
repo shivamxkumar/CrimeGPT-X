@@ -117,22 +117,36 @@ class EvidenceService:
             logger.error(f"MinIO upload failed: {e}")
             raise EvidenceStorageError(f"Evidence upload failed: {e}") from e
 
-    def get_presigned_url(self, file_path: str, expires_minutes: int = 60) -> Optional[str]:
-        """Generate time-limited presigned URL for evidence access"""
+    def download_object(self, file_path: str) -> bytes:
+        """Fetch the real evidence bytes from storage. MinIO runs on a private
+        network with no public endpoint, so the backend proxies the download
+        rather than issuing a presigned URL the client couldn't reach."""
         minio = self._get_minio()
-        if not minio or not file_path:
-            return None
+        if not minio:
+            raise EvidenceStorageError("Evidence object storage (MinIO/S3) is not configured or unreachable")
+        bucket, obj = file_path.split("/", 1)
         try:
-            from datetime import timedelta
-            parts = file_path.split("/", 1)
-            bucket, obj = parts[0], parts[1]
-            url = minio.presigned_get_object(
-                bucket, obj, expires=timedelta(minutes=expires_minutes)
-            )
-            return url
+            response = minio.get_object(bucket, obj)
+            try:
+                return response.read()
+            finally:
+                response.close()
+                response.release_conn()
         except Exception as e:
-            logger.error(f"Presigned URL generation failed: {e}")
-            return None
+            logger.error(f"MinIO download failed: {e}")
+            raise EvidenceStorageError(f"Evidence download failed: {e}") from e
+
+    def delete_object(self, file_path: str) -> None:
+        """Permanently remove an evidence object from storage."""
+        minio = self._get_minio()
+        if not minio:
+            raise EvidenceStorageError("Evidence object storage (MinIO/S3) is not configured or unreachable")
+        bucket, obj = file_path.split("/", 1)
+        try:
+            minio.remove_object(bucket, obj)
+        except Exception as e:
+            logger.error(f"MinIO delete failed: {e}")
+            raise EvidenceStorageError(f"Evidence deletion failed: {e}") from e
 
     def verify_integrity(self, file_data: bytes, expected_sha256: str) -> bool:
         """Verify file integrity against stored hash"""

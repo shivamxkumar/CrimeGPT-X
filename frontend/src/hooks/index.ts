@@ -78,6 +78,18 @@ export function useUploadEvidence(caseId: string) {
   })
 }
 
+export function useDeleteEvidence(caseId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (evidenceId: string) => evidenceAPI.delete(evidenceId),
+    onSuccess: () => {
+      toast.success('Evidence deleted')
+      qc.invalidateQueries({ queryKey: ['evidence', caseId] })
+    },
+    onError: () => toast.error('Evidence deletion failed'),
+  })
+}
+
 // ── Documents ─────────────────────────────────────────────────
 export function useDocuments(caseId: string) {
   return useQuery({

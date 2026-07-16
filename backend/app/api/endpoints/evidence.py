@@ -1,8 +1,10 @@
 """Evidence Upload Endpoint"""
+import io
 import logging
 import tempfile
 import os
 from fastapi import APIRouter, UploadFile, File, Form, Depends, HTTPException
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.core.database import get_db
@@ -13,6 +15,7 @@ from app.services.evidence_service import evidence_service, EvidenceStorageError
 from app.services.ocr_service import ocr_service
 from app.services.ai_service import ai_legal_service, AIServiceError
 from app.core.query_helpers import case_lookup_clause
+from app.core.http_helpers import content_disposition
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -122,6 +125,80 @@ async def upload_evidence(
     await db.commit()
     await db.refresh(ev)
     return EvidenceOut.model_validate(ev)
+
+
+# NOTE: these two routes must be registered BEFORE `GET /{case_id:path}` below —
+# its `:path` converter is greedy (needed since case_id values like
+# "CC/2026/0001" contain slashes) and would otherwise swallow requests to
+# /item/<id>/download or /item/<id> as if <id> were a case_id.
+@router.get("/item/{evidence_id}/download")
+async def download_evidence(
+    evidence_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Stream the real evidence file back from storage."""
+    result = await db.execute(select(Evidence).where(Evidence.id == evidence_id))
+    ev = result.scalar_one_or_none()
+    if not ev:
+        raise HTTPException(status_code=404, detail="Evidence not found")
+
+    try:
+        data = evidence_service.download_object(ev.file_path)
+    except EvidenceStorageError as e:
+        raise HTTPException(status_code=503, detail=f"Evidence download failed: {e}")
+
+    return StreamingResponse(
+        io.BytesIO(data),
+        media_type=ev.mime_type or "application/octet-stream",
+        headers={"Content-Disposition": content_disposition(ev.original_name)},
+    )
+
+
+@router.delete("/item/{evidence_id}", status_code=204)
+async def delete_evidence(
+    evidence_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Permanently delete an evidence item and record the deletion in the
+    immutable audit trail and case diary — the deletion itself becomes part
+    of the chain-of-custody record."""
+    result = await db.execute(select(Evidence).where(Evidence.id == evidence_id))
+    ev = result.scalar_one_or_none()
+    if not ev:
+        raise HTTPException(status_code=404, detail="Evidence not found")
+
+    case_result = await db.execute(select(Case).where(Case.id == ev.case_id))
+    case = case_result.scalar_one_or_none()
+
+    try:
+        evidence_service.delete_object(ev.file_path)
+    except EvidenceStorageError as e:
+        raise HTTPException(status_code=503, detail=f"Evidence deletion failed: {e}")
+
+    original_name = ev.original_name
+    sha256 = ev.sha256_hash
+
+    if case:
+        db.add(DiaryEntry(
+            case_id=case.id,
+            created_by_id=current_user.id,
+            entry_type=DiaryEntryType.NOTE,
+            title=f"Evidence Deleted: {original_name}",
+            description=f"SHA-256 {sha256[:16]}... permanently removed by {current_user.name}",
+            is_automated=True,
+        ))
+    db.add(AuditLog(
+        user_id=current_user.id, user_badge=current_user.badge_number, user_name=current_user.name,
+        action="EVIDENCE_DELETE", resource_type="evidence", resource_id=str(evidence_id),
+        extra_data={"original_name": original_name, "sha256_hash": sha256},
+    ))
+
+    await db.delete(ev)
+    await db.commit()
+    return None
+
 
 @router.get("/{case_id:path}")
 async def list_evidence(

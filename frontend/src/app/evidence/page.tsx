@@ -3,9 +3,11 @@ import AppShell from '@/components/layout/AppShell'
 import { PageHeader, Alert, HashDisplay, EmptyState, Spinner, CaseSelector, useSelectedCase } from '@/components/ui'
 import { useCallback, useState } from 'react'
 import { useDropzone } from 'react-dropzone'
-import { useEvidence, useUploadEvidence } from '@/hooks'
+import { useEvidence, useUploadEvidence, useDeleteEvidence } from '@/hooks'
+import { evidenceAPI } from '@/lib/api'
 import { Evidence } from '@/types'
-import { Upload, Lock, CheckCircle, AlertTriangle } from 'lucide-react'
+import { Upload, Lock, CheckCircle, AlertTriangle, Download, Trash2 } from 'lucide-react'
+import toast from 'react-hot-toast'
 
 const typeIcons: Record<string,string> = {
   image:'🖼️',video:'🎬',audio:'🎵',pdf:'📄',document:'📝',screenshot:'📸',chat_export:'💬',bank_statement:'🏦',other:'📁'
@@ -24,7 +26,30 @@ export default function EvidencePage() {
   const { selectedCaseId, cases, isLoading: casesLoading } = useSelectedCase()
   const { data: evidence, isLoading, isError } = useEvidence(selectedCaseId || '')
   const uploadMutation = useUploadEvidence(selectedCaseId || '')
+  const deleteMutation = useDeleteEvidence(selectedCaseId || '')
   const [selected, setSelected] = useState<Evidence | null>(null)
+  const [downloading, setDownloading] = useState(false)
+
+  async function handleDownload(ev: Evidence) {
+    setDownloading(true)
+    try {
+      const { data } = await evidenceAPI.download(ev.id)
+      const url = window.URL.createObjectURL(data)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = ev.original_name
+      a.click()
+      window.URL.revokeObjectURL(url)
+    } catch {
+      toast.error('Evidence download failed')
+    } finally {
+      setDownloading(false)
+    }
+  }
+
+  function handleDelete(ev: Evidence) {
+    deleteMutation.mutate(ev.id, { onSuccess: () => setSelected(null) })
+  }
 
   const onDrop = useCallback((files: File[]) => {
     const file = files[0]
@@ -124,7 +149,15 @@ export default function EvidencePage() {
                     <div className="font-semibold">{selected.original_name}</div>
                     <div className="text-xs text-text-secondary capitalize">{selected.evidence_type.replace('_',' ')} · {formatBytes(selected.file_size)}</div>
                   </div>
-                  <button className="text-text-muted hover:text-text-primary" onClick={() => setSelected(null)}>✕</button>
+                  <div className="flex items-center gap-2">
+                    <button className="btn-secondary text-xs px-2.5 py-1.5" disabled={downloading} onClick={() => handleDownload(selected)}>
+                      {downloading ? <Spinner size="sm" /> : <Download size={13} />}
+                    </button>
+                    <button className="btn-danger text-xs px-2.5 py-1.5" disabled={deleteMutation.isPending} onClick={() => handleDelete(selected)}>
+                      {deleteMutation.isPending ? <Spinner size="sm" /> : <Trash2 size={13} />}
+                    </button>
+                    <button className="text-text-muted hover:text-text-primary" onClick={() => setSelected(null)}>✕</button>
+                  </div>
                 </div>
 
                 <div className="space-y-3">

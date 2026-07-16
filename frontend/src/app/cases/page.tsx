@@ -7,7 +7,7 @@ import { casesAPI } from '@/lib/api'
 import { CaseListItem, CRIME_CATEGORY_LABELS } from '@/types'
 import Link from 'next/link'
 import { Search, Plus } from 'lucide-react'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { formatCurrency, formatDate, caseHref } from '@/lib/utils'
 
 const STATUS_OPTIONS = ['','registered','active','in_review','chargesheet','court','closed']
 const CATEGORY_OPTIONS = ['','upi_fraud','phishing','investment_scam','whatsapp_fraud','social_media','otp_fraud','fake_app','sextortion','ransomware','other']
@@ -82,7 +82,7 @@ export default function CasesPage() {
               </tr></thead>
               <tbody>
                 {filtered.map(c => (
-                  <tr key={c.id} className="tbl-row" onClick={() => window.location.href = `/cases/${c.case_id}`}>
+                  <tr key={c.id} className="tbl-row" onClick={() => window.location.href = caseHref(c.case_id)}>
                     <td><span className="font-mono text-xs text-accent-cyan">{c.case_id}</span></td>
                     <td className="text-xs text-text-secondary">{c.fir_number || '—'}</td>
                     <td className="text-xs">{CRIME_CATEGORY_LABELS[c.crime_category]}</td>
@@ -93,7 +93,7 @@ export default function CasesPage() {
                     <td><StatusBadge status={c.status}/></td>
                     <td><PriorityBadge priority={c.priority}/></td>
                     <td onClick={e => e.stopPropagation()}>
-                      <Link href={`/cases/${c.case_id}`} className="btn-secondary text-xs px-3 py-1.5">Open</Link>
+                      <Link href={caseHref(c.case_id)} className="btn-secondary text-xs px-3 py-1.5">Open</Link>
                     </td>
                   </tr>
                 ))}
