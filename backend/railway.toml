@@ -3,7 +3,9 @@ builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile"
 
 [deploy]
-startCommand = "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 4 --loop uvloop"
+# No startCommand override here — Railway's startCommand does not go through
+# a shell that expands ${PORT:-8000}, so it was passing that string to
+# uvicorn literally. The Dockerfile's own CMD (real shell form) handles it.
 healthcheckPath = "/health"
 healthcheckTimeout = 100
 restartPolicyType = "ON_FAILURE"

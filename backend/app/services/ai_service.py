@@ -311,12 +311,15 @@ class AILegalService:
             }),
         )
 
-        response = await client.aio.models.generate_content(
-            model=settings.AI_MODEL,
-            contents=prompt,
-            config=genai_types.GenerateContentConfig(max_output_tokens=max(settings.AI_MAX_TOKENS, 8192)),
-        )
-        return response.text
+        try:
+            response = await client.aio.models.generate_content(
+                model=settings.AI_MODEL,
+                contents=prompt,
+                config=genai_types.GenerateContentConfig(max_output_tokens=max(settings.AI_MAX_TOKENS, 8192)),
+            )
+            return response.text
+        except Exception as e:
+            raise AIServiceError(f"Document generation failed: {e}") from e
 
     async def chat_with_legal_ai(
         self,
@@ -347,16 +350,19 @@ suggestions the IO must independently verify — never present them as settled l
             for m in messages
         ]
 
-        response = await client.aio.models.generate_content(
-            model=settings.AI_MODEL,
-            contents=contents,
-            config=genai_types.GenerateContentConfig(
-                system_instruction=system,
-                max_output_tokens=1024,
-                thinking_config=genai_types.ThinkingConfig(thinking_budget=0),
-            ),
-        )
-        return response.text
+        try:
+            response = await client.aio.models.generate_content(
+                model=settings.AI_MODEL,
+                contents=contents,
+                config=genai_types.GenerateContentConfig(
+                    system_instruction=system,
+                    max_output_tokens=1024,
+                    thinking_config=genai_types.ThinkingConfig(thinking_budget=0),
+                ),
+            )
+            return response.text
+        except Exception as e:
+            raise AIServiceError(f"Legal chat failed: {e}") from e
 
     async def analyze_cyber_content(self, content_type: str, content: str) -> Dict[str, Any]:
         """Real-time cyber crime pattern detection over a URL/chat/email/phone excerpt."""

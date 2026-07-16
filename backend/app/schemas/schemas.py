@@ -2,7 +2,7 @@
 Pydantic Schemas — CrimeGPT-X API
 Request / Response models with validation
 """
-from pydantic import BaseModel, EmailStr, Field, validator
+from pydantic import BaseModel, EmailStr, Field, field_validator
 from typing import Optional, List, Any, Dict
 from datetime import datetime
 from uuid import UUID
@@ -77,7 +77,8 @@ class CaseCreate(BaseModel):
     incident_location: Optional[str] = None
     incident_date: Optional[datetime] = None
 
-    @validator('victim_email', pre=True)
+    @field_validator('victim_email', mode='before')
+    @classmethod
     def _empty_email_to_none(cls, v):
         return v or None
 
