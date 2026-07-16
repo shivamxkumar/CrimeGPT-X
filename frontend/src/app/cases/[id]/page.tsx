@@ -98,6 +98,27 @@ export default function CaseDetailPage() {
             </div>
           )}
 
+          {/* FIR OCR Output */}
+          {c.fir_ocr_text && (
+            <div className="card">
+              <div className="font-semibold text-sm mb-3">📄 FIR OCR Extraction</div>
+              {Object.keys(c.fir_ocr_fields || {}).length > 0 && (
+                <div className="grid grid-cols-2 gap-2 mb-3 text-xs">
+                  {Object.entries(c.fir_ocr_fields).map(([k, v]) => (
+                    <div key={k} className="bg-bg-base rounded-lg p-2">
+                      <div className="text-text-muted uppercase tracking-wide text-[10px]">{k.replace(/_/g, ' ')}</div>
+                      <div className="font-medium">{String(v)}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <details>
+                <summary className="text-xs text-text-muted cursor-pointer">Raw OCR text</summary>
+                <pre className="text-xs text-text-secondary whitespace-pre-wrap bg-bg-base rounded-lg p-3 mt-2">{c.fir_ocr_text}</pre>
+              </details>
+            </div>
+          )}
+
           {/* Quick Actions */}
           <div className="card">
             <div className="font-semibold text-sm mb-3">⚡ Quick Actions</div>

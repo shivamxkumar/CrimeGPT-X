@@ -113,6 +113,7 @@ class User(Base):
     rank = Column(String(100))
     is_active = Column(Boolean, default=True)
     is_verified = Column(Boolean, default=False)
+    is_demo = Column(Boolean, default=False, nullable=False)
     last_login = Column(DateTime(timezone=True))
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
@@ -171,6 +172,7 @@ class Case(Base):
 
     # Meta
     io_officer_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    is_demo = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     closed_at = Column(DateTime(timezone=True))

@@ -117,6 +117,8 @@ class CaseOut(BaseModel):
     incident_description: str
     incident_location: Optional[str] = None
     incident_date: Optional[datetime] = None
+    fir_ocr_text: Optional[str] = None
+    fir_ocr_fields: Dict[str, Any] = {}
     ai_sections: List[Dict[str, Any]]
     ai_analyzed_at: Optional[datetime] = None
     io_officer_id: UUID

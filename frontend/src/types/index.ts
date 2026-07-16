@@ -41,6 +41,8 @@ export interface Case {
   case_id: string
   fir_number?: string
   fir_date?: string
+  fir_ocr_text?: string
+  fir_ocr_fields?: Record<string, string>
   police_station: string
   crime_category: CrimeCategory
   status: CaseStatus

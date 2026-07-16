@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query'
 import { casesAPI, analyticsAPI, diaryRecentAPI } from '@/lib/api'
 import { CaseListItem, CRIME_CATEGORY_LABELS } from '@/types'
 import { useAuthStore } from '@/lib/store'
+import { caseHref } from '@/lib/utils'
 import Link from 'next/link'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 
@@ -66,7 +67,7 @@ export default function DashboardPage() {
             </tr></thead>
             <tbody>
               {cases.map(c => (
-                <tr key={c.id} className="tbl-row" onClick={()=>window.location.href=`/cases/${c.case_id}`}>
+                <tr key={c.id} className="tbl-row" onClick={()=>window.location.href=caseHref(c.case_id)}>
                   <td><span className="font-mono text-xs text-accent-cyan">{c.case_id}</span></td>
                   <td className="text-xs">{CRIME_CATEGORY_LABELS[c.crime_category] || c.crime_category}</td>
                   <td><span className={statusColors[c.status] || 'badge-gray'}>{c.status.replace('_',' ')}</span></td>

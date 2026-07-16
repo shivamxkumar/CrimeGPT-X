@@ -3,10 +3,8 @@ Document Generation Endpoint
 Renders legal documents via Jinja2 templates (fast path) with Gemini as the
 fallback for doc types without a template. Supports on-demand PDF/DOCX export.
 """
-import re
 import io
 import time
-from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import HTMLResponse, StreamingResponse
@@ -22,17 +20,9 @@ from app.services.doc_render_service import render_document
 from app.services.multilingual_service import multilingual_service
 from app.tasks.doc_tasks import render_pdf, render_docx
 from app.core.query_helpers import case_lookup_clause
+from app.core.http_helpers import content_disposition
 
 router = APIRouter()
-
-
-def _content_disposition(filename: str) -> str:
-    """Build a Content-Disposition header safe for HTTP (latin-1-only) headers
-    while still preserving non-ASCII document titles (e.g. Devanagari/Gujarati)
-    for browsers, via the RFC 5987 filename* parameter."""
-    ascii_fallback = re.sub(r"[^A-Za-z0-9._-]", "_", filename) or "document"
-    return f"attachment; filename=\"{ascii_fallback}\"; filename*=UTF-8''{quote(filename)}"
-
 
 DOC_TITLES = {
     "chargesheet": "Chargesheet (आरोप पत्र)",
@@ -213,7 +203,7 @@ async def export_document_pdf(
     return StreamingResponse(
         io.BytesIO(pdf_bytes),
         media_type="application/pdf",
-        headers={"Content-Disposition": _content_disposition(filename)},
+        headers={"Content-Disposition": content_disposition(filename)},
     )
 
 
@@ -240,5 +230,5 @@ async def export_document_docx(
     return StreamingResponse(
         io.BytesIO(docx_bytes),
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        headers={"Content-Disposition": _content_disposition(filename)},
+        headers={"Content-Disposition": content_disposition(filename)},
     )

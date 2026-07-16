@@ -1,5 +1,5 @@
 'use client'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Sidebar from './Sidebar'
 import Topbar from './Topbar'
@@ -8,11 +8,28 @@ import { useAuthStore } from '@/lib/store'
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const { user } = useAuthStore()
   const router = useRouter()
+  // Zustand's persist middleware rehydrates `user` from localStorage
+  // asynchronously after mount. Redirecting to /login before that finishes
+  // would log out an already-authenticated user on every fresh page load
+  // (e.g. a direct URL visit or a full navigation via window.location.href).
+  // `.persist` touches localStorage, so it must never be read during the
+  // initial render — that render also runs server-side at build time
+  // (Next.js prerendering), where it doesn't exist at all.
+  const [hydrated, setHydrated] = useState(false)
 
   useEffect(() => {
-    if (!user) router.replace('/login')
-  }, [user])
+    if (useAuthStore.persist.hasHydrated()) {
+      setHydrated(true)
+      return
+    }
+    return useAuthStore.persist.onFinishHydration(() => setHydrated(true))
+  }, [])
 
+  useEffect(() => {
+    if (hydrated && !user) router.replace('/login')
+  }, [hydrated, user])
+
+  if (!hydrated) return null
   if (!user) return null
 
   return (
