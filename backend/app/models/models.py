@@ -16,6 +16,11 @@ import enum
 
 from app.core.database import Base
 
+# JSONB/ARRAY have no native SQLite equivalent (used by the sqlite-backed test
+# suite); fall back to generic JSON there while keeping real JSONB/ARRAY on Postgres.
+JSONBType = JSONB().with_variant(JSON(), "sqlite")
+StringArrayType = ARRAY(String).with_variant(JSON(), "sqlite")
+
 
 # ── Enums ────────────────────────────────────────────────────
 
@@ -146,7 +151,7 @@ class Case(Base):
     accused_mode = Column(String(200))  # mode of fraud
 
     # Witnesses — stored as JSON array
-    witnesses = Column(JSONB, default=list)
+    witnesses = Column(JSONBType, default=list)
 
     # Incident
     incident_description = Column(Text, nullable=False)
@@ -154,15 +159,15 @@ class Case(Base):
     incident_date = Column(DateTime(timezone=True))
 
     # AI Analysis Results
-    ai_sections = Column(JSONB, default=list)        # [{section, title, confidence, act}]
-    ai_judgments = Column(JSONB, default=list)       # [{title, court, summary, relevance}]
+    ai_sections = Column(JSONBType, default=list)        # [{section, title, confidence, act}]
+    ai_judgments = Column(JSONBType, default=list)       # [{title, court, summary, relevance}]
     ai_analysis_raw = Column(Text)
     ai_analyzed_at = Column(DateTime(timezone=True))
 
     # FIR Upload
     fir_file_path = Column(String(500))
     fir_ocr_text = Column(Text)
-    fir_ocr_fields = Column(JSONB, default=dict)
+    fir_ocr_fields = Column(JSONBType, default=dict)
 
     # Meta
     io_officer_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
@@ -207,13 +212,13 @@ class Evidence(Base):
     verified_at = Column(DateTime(timezone=True))
 
     # Analysis
-    ai_analysis = Column(JSONB, default=dict)    # manipulation detection, entity extraction
+    ai_analysis = Column(JSONBType, default=dict)    # manipulation detection, entity extraction
     ocr_text = Column(Text)
-    tags = Column(ARRAY(String), default=list)
+    tags = Column(StringArrayType, default=list)
     description = Column(Text)
 
     # Chain of Custody
-    custody_chain = Column(JSONB, default=list)  # [{officer, timestamp, action, notes}]
+    custody_chain = Column(JSONBType, default=list)  # [{officer, timestamp, action, notes}]
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
@@ -237,7 +242,7 @@ class Document(Base):
     pdf_path = Column(String(500))
 
     # Content (for editing)
-    content_json = Column(JSONB, default=dict)  # structured content
+    content_json = Column(JSONBType, default=dict)  # structured content
     content_html = Column(Text)                  # rendered HTML
 
     # AI Generation metadata
@@ -269,7 +274,7 @@ class DiaryEntry(Base):
     entry_type = Column(Enum(DiaryEntryType), nullable=False)
     title = Column(String(300), nullable=False)
     description = Column(Text)
-    entry_metadata = Column("metadata", JSONB, default=dict)
+    entry_metadata = Column("metadata", JSONBType, default=dict)
     is_automated = Column(Boolean, default=False)  # True = system-generated
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -297,7 +302,7 @@ class AuditLog(Base):
 
     success = Column(Boolean, default=True)
     error_detail = Column(Text)
-    extra_data = Column(JSONB, default=dict)
+    extra_data = Column(JSONBType, default=dict)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 

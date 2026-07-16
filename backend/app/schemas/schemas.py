@@ -28,23 +28,23 @@ class UserCreate(BaseModel):
     badge_number: str = Field(..., min_length=5, max_length=50)
     name: str = Field(..., min_length=2, max_length=150)
     email: EmailStr
-    phone: Optional[str]
+    phone: Optional[str] = None
     password: str = Field(..., min_length=8)
     role: UserRole = UserRole.IO
     police_station: str = "Ahmedabad Cyber Crime Branch"
-    rank: Optional[str]
+    rank: Optional[str] = None
 
 class UserOut(BaseModel):
     id: UUID
     badge_number: str
     name: str
     email: str
-    phone: Optional[str]
+    phone: Optional[str] = None
     role: UserRole
     police_station: str
-    rank: Optional[str]
+    rank: Optional[str] = None
     is_active: bool
-    last_login: Optional[datetime]
+    last_login: Optional[datetime] = None
     created_at: datetime
 
     class Config:
@@ -54,73 +54,73 @@ class UserOut(BaseModel):
 # ── Case ─────────────────────────────────────────────────────
 
 class CaseCreate(BaseModel):
-    fir_number: Optional[str]
-    fir_date: Optional[datetime]
+    fir_number: Optional[str] = None
+    fir_date: Optional[datetime] = None
     police_station: str = "Ahmedabad Cyber Crime Branch"
     crime_category: CrimeCategory
     priority: CasePriority = CasePriority.MEDIUM
 
     victim_name: str = Field(..., min_length=2)
-    victim_phone: Optional[str]
-    victim_email: Optional[EmailStr]
-    victim_address: Optional[str]
+    victim_phone: Optional[str] = None
+    victim_email: Optional[EmailStr] = None
+    victim_address: Optional[str] = None
     victim_age: Optional[int] = Field(None, ge=1, le=120)
     amount_defrauded: float = Field(default=0.0, ge=0)
 
     accused_name: str = "Unknown"
-    accused_phone: Optional[str]
-    accused_address: Optional[str]
-    accused_mode: Optional[str]
+    accused_phone: Optional[str] = None
+    accused_address: Optional[str] = None
+    accused_mode: Optional[str] = None
 
     witnesses: List[Dict[str, Any]] = []
     incident_description: str = Field(..., min_length=20)
-    incident_location: Optional[str]
-    incident_date: Optional[datetime]
+    incident_location: Optional[str] = None
+    incident_date: Optional[datetime] = None
 
     @validator('victim_email', pre=True)
     def _empty_email_to_none(cls, v):
         return v or None
 
 class CaseUpdate(BaseModel):
-    fir_number: Optional[str]
-    status: Optional[CaseStatus]
-    priority: Optional[CasePriority]
-    crime_category: Optional[CrimeCategory]
-    victim_phone: Optional[str]
-    victim_email: Optional[EmailStr]
-    victim_address: Optional[str]
-    amount_defrauded: Optional[float]
-    accused_name: Optional[str]
-    accused_phone: Optional[str]
-    accused_address: Optional[str]
-    accused_mode: Optional[str]
-    incident_description: Optional[str]
-    incident_location: Optional[str]
-    witnesses: Optional[List[Dict[str, Any]]]
+    fir_number: Optional[str] = None
+    status: Optional[CaseStatus] = None
+    priority: Optional[CasePriority] = None
+    crime_category: Optional[CrimeCategory] = None
+    victim_phone: Optional[str] = None
+    victim_email: Optional[EmailStr] = None
+    victim_address: Optional[str] = None
+    amount_defrauded: Optional[float] = None
+    accused_name: Optional[str] = None
+    accused_phone: Optional[str] = None
+    accused_address: Optional[str] = None
+    accused_mode: Optional[str] = None
+    incident_description: Optional[str] = None
+    incident_location: Optional[str] = None
+    witnesses: Optional[List[Dict[str, Any]]] = None
 
 class CaseOut(BaseModel):
     id: UUID
     case_id: str
-    fir_number: Optional[str]
-    fir_date: Optional[datetime]
+    fir_number: Optional[str] = None
+    fir_date: Optional[datetime] = None
     police_station: str
     crime_category: CrimeCategory
     status: CaseStatus
     priority: CasePriority
     victim_name: str
-    victim_phone: Optional[str]
-    victim_address: Optional[str]
+    victim_phone: Optional[str] = None
+    victim_address: Optional[str] = None
     amount_defrauded: float
     accused_name: str
-    accused_phone: Optional[str]
+    accused_phone: Optional[str] = None
     incident_description: str
-    incident_location: Optional[str]
-    incident_date: Optional[datetime]
+    incident_location: Optional[str] = None
+    incident_date: Optional[datetime] = None
     ai_sections: List[Dict[str, Any]]
-    ai_analyzed_at: Optional[datetime]
+    ai_analyzed_at: Optional[datetime] = None
     io_officer_id: UUID
     created_at: datetime
-    updated_at: Optional[datetime]
+    updated_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
@@ -128,7 +128,7 @@ class CaseOut(BaseModel):
 class CaseListOut(BaseModel):
     id: UUID
     case_id: str
-    fir_number: Optional[str]
+    fir_number: Optional[str] = None
     crime_category: CrimeCategory
     status: CaseStatus
     priority: CasePriority
@@ -141,13 +141,13 @@ class CaseListOut(BaseModel):
         from_attributes = True
 
 class CaseSearchQuery(BaseModel):
-    q: Optional[str]
-    crime_category: Optional[CrimeCategory]
-    status: Optional[CaseStatus]
-    priority: Optional[CasePriority]
-    officer_id: Optional[UUID]
-    date_from: Optional[datetime]
-    date_to: Optional[datetime]
+    q: Optional[str] = None
+    crime_category: Optional[CrimeCategory] = None
+    status: Optional[CaseStatus] = None
+    priority: Optional[CasePriority] = None
+    officer_id: Optional[UUID] = None
+    date_from: Optional[datetime] = None
+    date_to: Optional[datetime] = None
     skip: int = Field(default=0, ge=0)
     limit: int = Field(default=50, ge=1, le=200)
 
@@ -156,7 +156,7 @@ class CaseSearchQuery(BaseModel):
 
 class AIAnalysisRequest(BaseModel):
     fir_text: str = Field(..., min_length=50)
-    case_id: Optional[str]
+    case_id: Optional[str] = None
     language: str = "en"
 
 class LegalSection(BaseModel):
@@ -169,8 +169,8 @@ class LegalSection(BaseModel):
 class Judgment(BaseModel):
     title: str
     court: str
-    year: Optional[str]
-    citation: Optional[str]
+    year: Optional[str] = None
+    citation: Optional[str] = None
     summary: str
     legal_relevance: str
     relevance_score: float = Field(..., ge=0, le=1)
@@ -198,8 +198,8 @@ class DocGenResponse(BaseModel):
     doc_type: DocumentType
     title: str
     content_html: str
-    pdf_url: Optional[str]
-    docx_url: Optional[str]
+    pdf_url: Optional[str] = None
+    docx_url: Optional[str] = None
     created_at: datetime
 
     class Config:
@@ -213,12 +213,12 @@ class EvidenceOut(BaseModel):
     file_name: str
     original_name: str
     file_size: int
-    mime_type: Optional[str]
+    mime_type: Optional[str] = None
     evidence_type: EvidenceType
     category: EvidenceCategory
     sha256_hash: str
     is_verified: bool
-    description: Optional[str]
+    description: Optional[str] = None
     tags: List[str]
     custody_chain: List[Dict[str, Any]]
     created_at: datetime
@@ -232,14 +232,14 @@ class EvidenceOut(BaseModel):
 class DiaryEntryCreate(BaseModel):
     entry_type: DiaryEntryType
     title: str = Field(..., min_length=3)
-    description: Optional[str]
+    description: Optional[str] = None
     metadata: Dict[str, Any] = {}
 
 class DiaryEntryOut(BaseModel):
     id: UUID
     entry_type: DiaryEntryType
     title: str
-    description: Optional[str]
+    description: Optional[str] = None
     is_automated: bool
     created_at: datetime
 

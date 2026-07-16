@@ -100,7 +100,7 @@ class TestAuth:
 
     async def test_login_unknown_badge(self, client: AsyncClient):
         r = await client.post("/api/v1/auth/login", json={
-            "badge_number": "UNKNOWN-999", "password": "test"
+            "badge_number": "UNKNOWN-999", "password": "testpass"
         })
         assert r.status_code == 401
 
@@ -135,7 +135,7 @@ class TestAuth:
 
 class TestCases:
     async def test_create_case(self, client: AsyncClient, auth_token: str):
-        r = await client.post("/api/v1/cases", json={
+        r = await client.post("/api/v1/cases/", json={
             "crime_category": "upi_fraud",
             "priority": "high",
             "victim_name": "Test Victim",
@@ -150,14 +150,14 @@ class TestCases:
         assert data["case_id"].startswith("CC/")
 
     async def test_list_cases(self, client: AsyncClient, auth_token: str):
-        r = await client.get("/api/v1/cases",
+        r = await client.get("/api/v1/cases/",
                              headers={"Authorization": f"Bearer {auth_token}"})
         assert r.status_code == 200
         assert "items" in r.json()
         assert "total" in r.json()
 
     async def test_case_requires_auth(self, client: AsyncClient):
-        r = await client.get("/api/v1/cases")
+        r = await client.get("/api/v1/cases/")
         assert r.status_code == 403
 
     async def test_case_stats(self, client: AsyncClient, auth_token: str):

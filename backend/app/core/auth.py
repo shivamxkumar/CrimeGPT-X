@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
@@ -44,6 +45,10 @@ async def get_current_user(
     payload = decode_token(credentials.credentials)
     user_id = payload.get("sub")
     if not user_id:
+        raise HTTPException(status_code=401, detail="Invalid token payload")
+    try:
+        user_id = uuid.UUID(user_id)
+    except ValueError:
         raise HTTPException(status_code=401, detail="Invalid token payload")
     result = await db.execute(select(User).where(User.id == user_id, User.is_active == True))
     user = result.scalar_one_or_none()
