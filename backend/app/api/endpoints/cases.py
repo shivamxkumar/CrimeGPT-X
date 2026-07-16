@@ -1,9 +1,8 @@
-import uuid
 from datetime import datetime
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, or_, and_
+from sqlalchemy import select, func, or_, and_, text
 from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
@@ -12,16 +11,26 @@ from app.models.models import Case, User, AuditLog, DiaryEntry, DiaryEntryType, 
 from app.schemas.schemas import (
     CaseCreate, CaseUpdate, CaseOut, CaseListOut, PaginatedResponse
 )
+from app.core.query_helpers import case_lookup_clause
 
 router = APIRouter()
 
 
-def _generate_case_id() -> str:
-    """Generate sequential case ID: CC/YYYY/NNNN"""
+async def _generate_case_id(db: AsyncSession) -> str:
+    """Generate sequential case ID: CC/YYYY/NNNN, race-safe under Postgres via
+    an advisory transaction lock scoped to the current year; the SQLite test
+    suite has no such lock primitive and just counts (single-threaded tests)."""
     year = datetime.utcnow().year
-    # In production this would use DB sequence; using UUID slice for demo
-    seq = str(uuid.uuid4().int)[:4].zfill(4)
-    return f"CC/{year}/{seq}"
+    prefix = f"CC/{year}/"
+
+    if db.bind.dialect.name == "postgresql":
+        await db.execute(text("SELECT pg_advisory_xact_lock(hashtext(:key))"), {"key": f"case_seq_{year}"})
+
+    count_result = await db.execute(
+        select(func.count(Case.id)).where(Case.case_id.like(f"{prefix}%"))
+    )
+    seq = (count_result.scalar() or 0) + 1
+    return f"{prefix}{str(seq).zfill(4)}"
 
 
 @router.post("/", response_model=CaseOut, status_code=201)
@@ -32,7 +41,7 @@ async def create_case(
     current_user: User = Depends(get_current_user),
 ):
     case = Case(
-        case_id=_generate_case_id(),
+        case_id=await _generate_case_id(db),
         io_officer_id=current_user.id,
         **payload.model_dump(),
     )
@@ -114,7 +123,29 @@ async def list_cases(
     )
 
 
-@router.get("/{case_id}", response_model=CaseOut)
+@router.get("/stats/summary")
+async def case_stats(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Dashboard statistics"""
+    total = await db.execute(select(func.count(Case.id)))
+    active = await db.execute(select(func.count(Case.id)).where(Case.status == "active"))
+    closed = await db.execute(select(func.count(Case.id)).where(Case.status == "closed"))
+    pending = await db.execute(select(func.count(Case.id)).where(Case.status == "in_review"))
+
+    return {
+        "total": total.scalar(),
+        "active": active.scalar(),
+        "closed": closed.scalar(),
+        "pending_review": pending.scalar(),
+    }
+
+
+# NOTE: this route must be registered AFTER /stats/summary above — its
+# {case_id:path} converter is greedy (needed since case_id values like
+# "CC/2026/0001" contain slashes) and would otherwise swallow that request.
+@router.get("/{case_id:path}", response_model=CaseOut)
 async def get_case(
     case_id: str,
     db: AsyncSession = Depends(get_db),
@@ -122,16 +153,22 @@ async def get_case(
 ):
     result = await db.execute(
         select(Case)
-        .where(or_(Case.case_id == case_id, Case.id == case_id))
-        .options(selectinload(Case.evidence), selectinload(Case.diary_entries))
+        .where(case_lookup_clause(case_id))
+        .options(selectinload(Case.evidence), selectinload(Case.diary_entries), selectinload(Case.documents))
     )
     case = result.scalar_one_or_none()
     if not case:
         raise HTTPException(status_code=404, detail="Case not found")
-    return CaseOut.model_validate(case)
+
+    case_out = CaseOut.model_validate(case)
+    case_out.evidence_count = len(case.evidence)
+    case_out.document_count = len(case.documents)
+    case_out.diary_count = len(case.diary_entries)
+    case_out.witness_count = len(case.witnesses or [])
+    return case_out
 
 
-@router.patch("/{case_id}", response_model=CaseOut)
+@router.patch("/{case_id:path}", response_model=CaseOut)
 async def update_case(
     case_id: str,
     payload: CaseUpdate,
@@ -140,7 +177,7 @@ async def update_case(
     current_user: User = Depends(get_current_user),
 ):
     result = await db.execute(select(Case).where(
-        or_(Case.case_id == case_id, Case.id == case_id)
+        case_lookup_clause(case_id)
     ))
     case = result.scalar_one_or_none()
     if not case:
@@ -174,22 +211,3 @@ async def update_case(
     await db.commit()
     await db.refresh(case)
     return CaseOut.model_validate(case)
-
-
-@router.get("/stats/summary")
-async def case_stats(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    """Dashboard statistics"""
-    total = await db.execute(select(func.count(Case.id)))
-    active = await db.execute(select(func.count(Case.id)).where(Case.status == "active"))
-    closed = await db.execute(select(func.count(Case.id)).where(Case.status == "closed"))
-    pending = await db.execute(select(func.count(Case.id)).where(Case.status == "in_review"))
-
-    return {
-        "total": total.scalar(),
-        "active": active.scalar(),
-        "closed": closed.scalar(),
-        "pending_review": pending.scalar(),
-    }

@@ -12,50 +12,42 @@ interface ExtractedFields { fir_number?:string; date?:string; complainant_name?:
 
 export default function FIRPage() {
   const [uploading, setUploading] = useState(false)
-  const [progress, setProgress] = useState(0)
-  const [statusMsg, setStatusMsg] = useState('')
+  const [error, setError] = useState<string | null>(null)
   const [extracted, setExtracted] = useState<ExtractedFields | null>(null)
   const [rawText, setRawText] = useState('')
-  const [fileName, setFileName] = useState('')
+  const [confidence, setConfidence] = useState<number | null>(null)
 
-  const simulateOCR = async (file: File) => {
-    setFileName(file.name)
+  const uploadAndExtract = async (file: File) => {
     setUploading(true)
+    setError(null)
     setExtracted(null)
-    const steps = [
-      [15, 'Detected document format...'],
-      [30, 'Initializing EasyOCR engine...'],
-      [50, 'Extracting text from pages...'],
-      [70, 'Running NER (Named Entity Recognition)...'],
-      [88, 'Parsing structured fields...'],
-      [100, 'Extraction complete!'],
-    ]
-    for (const [pct, msg] of steps) {
-      await new Promise(r => setTimeout(r, 500))
-      setProgress(pct as number)
-      setStatusMsg(msg as string)
-    }
     try {
       const { data } = await firAPI.upload(file)
-      setExtracted(data.ocr_result?.extracted_fields || getMockFields())
-      setRawText(data.ocr_result?.raw_text || MOCK_RAW_TEXT)
-    } catch {
-      setExtracted(getMockFields())
-      setRawText(MOCK_RAW_TEXT)
-      toast.success('OCR complete (demo mode)')
+      const fields = data.ocr_result?.extracted_fields || {}
+      setExtracted(fields)
+      setRawText(data.ocr_result?.raw_text || '')
+      setConfidence(data.ocr_result?.confidence ?? null)
+      if (Object.keys(fields).length === 0) {
+        toast('OCR completed but no structured fields could be extracted — review the raw text and enter fields manually.', { icon: '⚠️' })
+      } else {
+        toast.success('OCR extraction complete')
+      }
+    } catch (e: any) {
+      setError(e?.response?.data?.detail || 'OCR processing failed — check the backend connection and try again.')
+    } finally {
+      setUploading(false)
     }
-    setUploading(false)
   }
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop: useCallback((files: File[]) => { if (files[0]) simulateOCR(files[0]) }, []),
+    onDrop: useCallback((files: File[]) => { if (files[0]) uploadAndExtract(files[0]) }, []),
     accept: { 'application/pdf':[], 'image/*':[] },
     multiple: false,
   })
 
   return (
     <AppShell>
-      <PageHeader title="FIR Upload & OCR Extraction" subtitle="Upload FIR — AI extracts all fields automatically" />
+      <PageHeader title="FIR Upload & OCR Extraction" subtitle="Upload FIR — real OCR extracts fields from the document" />
 
       <div className="grid grid-cols-2 gap-5">
         {/* Left: Upload + Progress */}
@@ -70,25 +62,20 @@ export default function FIRPage() {
             <FileText size={48} className="mx-auto mb-3 text-text-muted" />
             <div className="font-medium mb-1 text-sm">Drop FIR PDF or Image Here</div>
             <div className="text-xs text-text-secondary mb-4">Supports PDF, JPG, PNG, TIFF — Max 50MB</div>
-            <div className="flex gap-2 justify-center">
-              <button className="btn-primary text-xs px-4">📁 Upload FIR</button>
-              <button className="btn-secondary text-xs px-4" onClick={e => e.stopPropagation()}>✍️ Manual Entry</button>
-            </div>
+            <button className="btn-primary text-xs px-4">📁 Upload FIR</button>
           </div>
 
           {uploading && (
             <div className="card">
-              <div className="flex items-center gap-3 mb-3">
+              <div className="flex items-center gap-3 mb-1">
                 <Spinner />
-                <div className="font-semibold text-sm">OCR Processing</div>
-                <span className="ml-auto text-xs text-accent-blue font-mono">{progress}%</span>
+                <div className="font-semibold text-sm">Processing with OCR engine…</div>
               </div>
-              <div className="h-2 bg-bg-hover rounded-full overflow-hidden mb-2">
-                <div className="h-full rounded-full bg-gradient-to-r from-accent-blue to-accent-cyan transition-all" style={{width:`${progress}%`}} />
-              </div>
-              <div className="text-xs text-text-secondary">{statusMsg}</div>
+              <div className="text-xs text-text-secondary">This calls the real backend OCR pipeline (EasyOCR/Tesseract) — larger files may take longer.</div>
             </div>
           )}
+
+          {error && <Alert variant="error" icon="⚠️">{error}</Alert>}
 
           {extracted && (
             <div className="card">
@@ -97,18 +84,24 @@ export default function FIRPage() {
                 <div className="font-semibold text-sm">Extracted Fields</div>
                 <span className="badge-green ml-auto">OCR Complete</span>
               </div>
-              <Alert variant="success">18 of 21 fields extracted successfully. Review and edit before saving to case.</Alert>
-              <div className="grid grid-cols-2 gap-3">
-                {Object.entries(extracted).map(([k, v]) => (
-                  <div key={k}>
-                    <label className="label block mb-1 capitalize">{k.replace('_',' ')}</label>
-                    <input className="input text-xs" style={{borderColor:'rgba(0,230,118,0.3)'}} defaultValue={v} />
-                  </div>
-                ))}
-              </div>
+              <Alert variant={confidence !== null && confidence < 50 ? 'warning' : 'success'}>
+                {confidence !== null ? `${confidence}% field-extraction confidence.` : ''} Review and edit before saving to case.
+              </Alert>
+              {Object.keys(extracted).length === 0 ? (
+                <div className="text-sm text-text-secondary">No fields could be automatically extracted from this document. Enter details manually below.</div>
+              ) : (
+                <div className="grid grid-cols-2 gap-3">
+                  {Object.entries(extracted).map(([k, v]) => (
+                    <div key={k}>
+                      <label className="label block mb-1 capitalize">{k.replace('_',' ')}</label>
+                      <input className="input text-xs" style={{borderColor:'rgba(0,230,118,0.3)'}} defaultValue={v} />
+                    </div>
+                  ))}
+                </div>
+              )}
               <div className="flex gap-2 mt-4">
-                <Link href="/legal" className="btn-primary text-xs">🤖 Analyze with AI → Legal Sections</Link>
-                <button className="btn-secondary text-xs">Save to Case</button>
+                <Link href="/cases/new" className="btn-primary text-xs">Save to New Case</Link>
+                <Link href="/legal" className="btn-secondary text-xs">🤖 Analyze with AI → Legal Sections</Link>
               </div>
             </div>
           )}
@@ -132,38 +125,3 @@ export default function FIRPage() {
     </AppShell>
   )
 }
-
-function getMockFields(): ExtractedFields {
-  return {
-    fir_number: 'FIR-0942/24',
-    date: '12/06/2024',
-    complainant_name: 'Ramesh Kumar Patel',
-    phone: '+91 9825647382',
-    address: 'Naranpura, Ahmedabad — 380013',
-    amount: '150000',
-    police_station: 'Ahmedabad Cyber Crime Branch',
-  }
-}
-
-const MOCK_RAW_TEXT = `FIRST INFORMATION REPORT
-Ahmedabad Cyber Crime Branch, Gujarat Police
-FIR No.: FIR-0942/24       Date: 12/06/2024
-
-Name of Complainant: Ramesh Kumar Patel
-Father's Name: Manoj Patel
-Address: 14, Saraswati Society, Naranpura, Ahmedabad - 380013
-Mobile: +91 9825647382
-
-Crime Category: UPI / Digital Payment Fraud
-Amount Defrauded: Rs. 1,50,000/- (One Lakh Fifty Thousand)
-
-Narration of Complaint:
-The complainant states that on 12th June 2024, he received a WhatsApp 
-call from an unknown number claiming to be from State Bank of India 
-KYC verification department. The caller instructed the complainant to 
-install AnyDesk application for KYC verification. After installation, 
-the accused gained remote access and transferred Rs.1,50,000 via 
-unauthorized UPI transactions from SBI Account No. XXXX4782.
-
-Signature of Complainant: [Signed]
-Recording Officer: SI Rajesh Sharma, AHM-24-IO-047`

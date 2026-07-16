@@ -121,6 +121,10 @@ class CaseOut(BaseModel):
     io_officer_id: UUID
     created_at: datetime
     updated_at: Optional[datetime] = None
+    evidence_count: int = 0
+    document_count: int = 0
+    diary_count: int = 0
+    witness_count: int = 0
 
     class Config:
         from_attributes = True
@@ -175,11 +179,33 @@ class Judgment(BaseModel):
     legal_relevance: str
     relevance_score: float = Field(..., ge=0, le=1)
 
+class ExtractedEntity(BaseModel):
+    name: str
+    details: Optional[str] = None
+
+class ExtractedEntities(BaseModel):
+    victims: List[ExtractedEntity] = []
+    suspects: List[ExtractedEntity] = []
+    witnesses: List[ExtractedEntity] = []
+
+class TimelineEvent(BaseModel):
+    date: Optional[str] = None
+    description: str
+
+class RiskAssessment(BaseModel):
+    level: str  # low | medium | high | critical
+    score: float = Field(..., ge=0, le=100)
+    factors: List[str] = []
+
 class AIAnalysisResponse(BaseModel):
     sections: List[LegalSection]
     judgments: List[Judgment]
+    judgments_message: Optional[str] = None
     crime_type_detected: str
     key_facts: List[str]
+    entities: ExtractedEntities
+    timeline: List[TimelineEvent]
+    risk_assessment: RiskAssessment
     investigation_recommendations: List[str]
     model_used: str
     analysis_time_ms: int
@@ -219,6 +245,8 @@ class EvidenceOut(BaseModel):
     sha256_hash: str
     is_verified: bool
     description: Optional[str] = None
+    ocr_text: Optional[str] = None
+    ai_analysis: Dict[str, Any] = {}
     tags: List[str]
     custody_chain: List[Dict[str, Any]]
     created_at: datetime

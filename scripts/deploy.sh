@@ -48,7 +48,7 @@ if [ ! -f ".env" ]; then
   if [ -f ".env.example" ]; then
     cp .env.example .env
     warn ".env created from .env.example"
-    warn "Please set ANTHROPIC_API_KEY in .env before continuing"
+    warn "Please set GEMINI_API_KEY in .env before continuing"
   fi
 fi
 
@@ -56,11 +56,10 @@ if [ -f ".env" ]; then
   source .env 2>/dev/null || true
 fi
 
-if [ -z "${ANTHROPIC_API_KEY:-}" ]; then
-  warn "ANTHROPIC_API_KEY not set — AI features will use fallback mode"
-  warn "Set it in .env to enable live Claude AI analysis"
+if [ -z "${GEMINI_API_KEY:-}" ]; then
+  err "GEMINI_API_KEY not set in .env — AI features require a real Gemini API key. Get one at https://aistudio.google.com/apikey"
 else
-  log "Anthropic API key found"
+  log "Gemini API key found"
 fi
 
 step "PULLING DOCKER IMAGES"
@@ -69,7 +68,7 @@ docker compose pull --quiet 2>/dev/null || warn "Some images may build locally"
 step "STARTING SERVICES"
 if [ "$MODE" = "demo" ]; then
   info "Starting in DEMO mode (without pgAdmin to save resources)"
-  docker compose up -d db redis chromadb minio backend frontend nginx worker
+  docker compose up -d db redis chromadb minio backend frontend nginx worker beat
 elif [ "$MODE" = "dev" ]; then
   info "Starting in DEV mode (with pgAdmin and Flower)"
   docker compose --profile dev up -d
@@ -100,9 +99,10 @@ done
 step "DATABASE MIGRATIONS"
 docker compose exec -T backend alembic upgrade head 2>/dev/null && log "Migrations applied" || warn "Migration skipped (DB may already be up to date)"
 
-step "SEEDING DATA"
-info "Seeding ChromaDB with landmark judgments..."
-docker compose exec -T backend python scripts/seed_chroma.py 2>/dev/null && log "ChromaDB seeded" || warn "ChromaDB seed skipped (may already be seeded)"
+step "LEGAL CORPUS"
+info "Ensuring the ChromaDB judgments collection exists (no sample data is ever inserted)..."
+docker compose exec -T backend python scripts/ingest_legal_corpus.py 2>/dev/null && log "Judgments collection ready" || warn "Judgments collection setup skipped"
+warn "To enable judgment search, ingest a real corpus: docker compose exec backend python scripts/ingest_legal_corpus.py /path/to/judgments.json"
 
 info "Applying database seed (demo users + views)..."
 docker compose exec -T db psql -U crimegpt -d crimegpt_db -f /docker-entrypoint-initdb.d/init.sql 2>/dev/null && log "DB seed applied" || warn "DB seed skipped"

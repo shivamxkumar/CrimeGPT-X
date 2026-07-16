@@ -1,85 +1,60 @@
 'use client'
 import AppShell from '@/components/layout/AppShell'
-import { PageHeader, LegalSectionCard, Alert, Spinner } from '@/components/ui'
+import { PageHeader, LegalSectionCard, Alert, Spinner, CaseSelector, useSelectedCase, EmptyState } from '@/components/ui'
 import { useState, useRef, useEffect } from 'react'
-import { aiAPI } from '@/lib/api'
+import { useQuery } from '@tanstack/react-query'
+import { aiAPI, casesAPI } from '@/lib/api'
 import { AIAnalysisResult } from '@/types'
-import { Send, RefreshCw, Shield, MessageSquare } from 'lucide-react'
-
-const DEMO_FIR = `Complainant Ramesh Kumar Patel, resident of Naranpura, Ahmedabad, received a WhatsApp call from unknown number +91-7XXX-XXXXXX claiming to be a State Bank of India KYC verification officer. The caller instructed him to install AnyDesk remote access application to complete KYC update. After installation, the accused gained remote access to his phone and transferred ₹1,50,000 (One Lakh Fifty Thousand Rupees) from his SBI account ending 4782 through unauthorized UPI transactions. Complainant discovered the fraud after receiving SMS alerts for debits he did not authorize.`
-
-const MOCK_ANALYSIS: AIAnalysisResult = {
-  sections: [
-    { section: 'BNS 318', title: 'Cheating', description: 'Accused deceived victim by impersonating an SBI KYC officer to induce installation of remote access software.', confidence: 93, act: 'BNS' },
-    { section: 'BNS 319', title: 'Cheating by Personation', description: 'Falsely claimed to be a bank official to gain the victim’s trust.', confidence: 91, act: 'BNS' },
-    { section: 'IT Act 66C', title: 'Identity Theft', description: 'Unauthorized use of banking credentials obtained via remote access.', confidence: 88, act: 'IT Act' },
-    { section: 'IT Act 66D', title: 'Computer Resource Cheating', description: 'Used AnyDesk (a computer resource) to commit the fraud.', confidence: 86, act: 'IT Act' },
-  ],
-  judgments: [
-    { title: 'State of Karnataka vs. Soman', court: 'Supreme Court of India', year: '2022', citation: 'AIR 2022 SC 1847', summary: "Held that gaining unauthorized remote access to a victim's device to conduct financial transactions constitutes identity theft and cheating by personation using computer resources.", legal_relevance: 'Directly applicable — remote access via AnyDesk matches the exact pattern adjudicated here.', relevance_score: 0.94 },
-    { title: 'Thane Police vs. Rahul Singh', court: 'Gujarat High Court', year: '2023', citation: '2023 Cr LJ 210', summary: 'Gujarat HC upheld conviction where accused impersonated a bank employee to induce unauthorized UPI transfers; digital evidence chain held admissible under BSA.', legal_relevance: 'Same jurisdiction and identical crime pattern — strong precedent.', relevance_score: 0.77 },
-  ],
-  crime_type_detected: 'UPI Fraud — Remote Access / Bank Impersonation',
-  key_facts: [
-    'Contact made via WhatsApp call from unknown number',
-    'Accused impersonated SBI KYC verification officer',
-    'AnyDesk remote access software installed on victim device',
-    '₹1,50,000 transferred via unauthorized UPI transactions',
-    'Victim account: SBI, ending 4782',
-  ],
-  investigation_recommendations: [
-    'Issue Section 91 BNSS notice to bank for transaction & IP logs',
-    'Request call detail records (CDR) for the caller number',
-    'Preserve AnyDesk session logs and device forensic image',
-    'Trace beneficiary UPI ID / mule account for fund trail',
-  ],
-  model_used: 'claude-sonnet (demo)',
-  analysis_time_ms: 1240,
-}
+import { Send, Shield, MessageSquare } from 'lucide-react'
 
 interface Message { role: 'user' | 'assistant'; content: string }
 
-function mockReplyFor(msg: string): string {
-  const m = msg.toLowerCase()
-  if (m.includes('remote access')) {
-    return 'For remote-access-enabled fraud (e.g. AnyDesk/TeamViewer used to induce UPI transfers), BNS 318 (Cheating) and BNS 319 (Cheating by Personation) apply for the deception, alongside IT Act 66C (Identity Theft) and 66D (Cheating by Personation using Computer Resource) for the digital channel. State of Karnataka vs. Soman (AIR 2022 SC 1847) is directly on point.'
-  }
-  if (m.includes('chargesheet')) {
-    return 'To file a chargesheet: (1) complete evidence collection and forensic analysis, (2) record all witness statements under BNSS 180, (3) use the Document Generation Engine to auto-populate the chargesheet from case data, (4) have the IO review and sign, then (5) submit to the Magistrate within 60/90 days of arrest as per BNSS timelines.'
-  }
-  if (m.includes('evidence') || m.includes('admissib') || m.includes('bsa')) {
-    return 'Under the Bharatiya Sakshya Adhiniyam (BSA), electronic records are admissible under Section 63 provided a certificate of authenticity accompanies the evidence. SHA-256 hashing at upload (as done in the Evidence Vault) helps establish integrity and chain of custody for court submission.'
-  }
-  if (m.includes('remand') || m.includes('187') || m.includes('bnss')) {
-    return 'BNSS Section 187 governs remand procedure: police custody can be sought up to 15 days within the initial 40/60-day period, with judicial custody thereafter. The Remand Request document template auto-fills grounds from the case\'s incident description and AI-identified sections.'
-  }
-  return "Based on the case facts, BNS 318/319 and IT Act 66C/66D are the primary applicable sections here. I can help draft chargesheet paragraphs, find similar judgments, or explain procedural next steps — just ask."
-}
+const riskColors: Record<string, string> = { low: '#00e676', medium: '#ffa726', high: '#ff5252', critical: '#ff1744' }
 
 export default function LegalAIPage() {
-  const [firText, setFirText] = useState(DEMO_FIR)
+  const { selectedCaseId, cases, isLoading: casesLoading } = useSelectedCase()
+  const { data: selectedCase } = useQuery({
+    queryKey: ['case', selectedCaseId],
+    queryFn: () => casesAPI.get(selectedCaseId!).then(r => r.data),
+    enabled: !!selectedCaseId,
+  })
+  const [firText, setFirText] = useState('')
   const [analysis, setAnalysis] = useState<AIAnalysisResult | null>(null)
+  const [analysisError, setAnalysisError] = useState<string | null>(null)
   const [analyzing, setAnalyzing] = useState(false)
-  const [messages, setMessages] = useState<Message[]>([{
-    role: 'assistant',
-    content: "Namaste! I'm CrimeGPT-X's Legal AI. I've pre-loaded Case CC/2024/0847. Ask me anything about applicable BNS sections, BNSS procedures, BSA references, or similar landmark judgments. I can also help draft specific paragraphs for your chargesheet."
-  }])
+  const [messages, setMessages] = useState<Message[]>([])
   const [chatInput, setChatInput] = useState('')
   const [chatLoading, setChatLoading] = useState(false)
+  const [chatError, setChatError] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const [activeTab, setActiveTab] = useState<'sections' | 'judgments' | 'recommendations'>('sections')
+  const [activeTab, setActiveTab] = useState<'sections' | 'judgments' | 'entities' | 'timeline' | 'recommendations'>('sections')
+
+  useEffect(() => {
+    if (selectedCase) {
+      setFirText(selectedCase.incident_description || '')
+      setMessages([{
+        role: 'assistant',
+        content: `Namaste! I'm CrimeGPT-X's Legal AI. I've loaded Case ${selectedCase.case_id}. Ask me anything about applicable BNS sections, BNSS procedures, BSA references, or similar landmark judgments.`,
+      }])
+      setAnalysis(null)
+    }
+  }, [selectedCase?.case_id])
 
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
 
   async function runAnalysis() {
-    if (!firText.trim()) return
+    if (!firText.trim() || firText.trim().length < 50) {
+      setAnalysisError('FIR text must be at least 50 characters for a meaningful AI analysis.')
+      return
+    }
     setAnalyzing(true)
     setAnalysis(null)
+    setAnalysisError(null)
     try {
-      const { data } = await aiAPI.analyzeFIR(firText, 'CC/2024/0847')
+      const { data } = await aiAPI.analyzeFIR(firText, selectedCaseId || undefined)
       setAnalysis(data)
-    } catch {
-      setAnalysis(MOCK_ANALYSIS)
+    } catch (e: any) {
+      setAnalysisError(e?.response?.data?.detail || 'AI analysis failed — check the backend/Gemini API connection.')
     } finally {
       setAnalyzing(false)
     }
@@ -89,17 +64,18 @@ export default function LegalAIPage() {
     const msg = chatInput.trim()
     if (!msg || chatLoading) return
     setChatInput('')
+    setChatError(null)
     const newMessages: Message[] = [...messages, { role: 'user', content: msg }]
     setMessages(newMessages)
     setChatLoading(true)
     try {
       const { data } = await aiAPI.chat(
         newMessages.map(m => ({ role: m.role, content: m.content })),
-        'CC/2024/0847'
+        selectedCaseId || undefined
       )
       setMessages(prev => [...prev, { role: 'assistant', content: data.reply }])
-    } catch {
-      setMessages(prev => [...prev, { role: 'assistant', content: mockReplyFor(msg) }])
+    } catch (e: any) {
+      setChatError(e?.response?.data?.detail || 'AI chat failed — check the backend/Gemini API connection.')
     } finally {
       setChatLoading(false)
     }
@@ -107,14 +83,14 @@ export default function LegalAIPage() {
 
   return (
     <AppShell>
-      <PageHeader title="AI Legal Intelligence Engine" subtitle="Case CC/2024/0847 — UPI Fraud">
-        <span className="badge-cyan">AI Powered</span>
-        <button className="btn-primary text-sm" onClick={runAnalysis} disabled={analyzing}>
-          {analyzing ? <Spinner size="sm" /> : <RefreshCw size={14} />}
-          {analyzing ? 'Analyzing...' : 'Analyze FIR'}
-        </button>
+      <PageHeader title="AI Legal Intelligence Engine" subtitle={selectedCase ? `Case ${selectedCase.case_id} — ${selectedCase.victim_name}` : 'Select a case, or analyze free-form FIR text'}>
+        <CaseSelector />
+        <span className="badge-cyan">Gemini Powered</span>
       </PageHeader>
 
+      {casesLoading ? (
+        <div className="flex justify-center py-16"><Spinner size="lg"/></div>
+      ) : (
       <div className="grid grid-cols-2 gap-5">
         {/* Left: FIR + Results */}
         <div className="flex flex-col gap-4">
@@ -125,31 +101,26 @@ export default function LegalAIPage() {
             <textarea
               className="input font-mono text-xs leading-relaxed"
               rows={7}
+              placeholder="Paste or edit the FIR narrative text to analyze (min. 50 characters)..."
               value={firText}
               onChange={e => setFirText(e.target.value)}
             />
             <button
               className="btn-primary w-full justify-center mt-3"
               onClick={runAnalysis}
-              disabled={analyzing}
+              disabled={analyzing || !firText.trim()}
             >
               {analyzing ? <><Spinner size="sm" /> Analyzing FIR...</> : '🤖 Analyze → Suggest BNS Sections'}
             </button>
           </div>
 
+          {analysisError && <Alert variant="error" icon="⚠️">{analysisError}</Alert>}
+
           {analyzing && (
             <div className="card">
-              <div className="flex items-center gap-3 mb-3">
+              <div className="flex items-center gap-3">
                 <Spinner />
-                <div className="font-semibold text-sm">AI is analyzing the FIR...</div>
-              </div>
-              <div className="space-y-1.5 font-mono text-[11px] text-text-secondary">
-                {['Tokenizing FIR text...','Identifying crime keywords: UPI, remote access...','Matching BNS Bharatiya Nyaya Sanhita...','Cross-referencing IT Act provisions...','Calculating confidence scores...'].map((s,i)=>(
-                  <div key={i} className="flex items-center gap-2">
-                    <Spinner size="sm" />
-                    <span>{s}</span>
-                  </div>
-                ))}
+                <div className="font-semibold text-sm">Gemini is analyzing the FIR — sections, entities, timeline, risk...</div>
               </div>
             </div>
           )}
@@ -161,25 +132,37 @@ export default function LegalAIPage() {
                 <span className="badge-green">AI Complete · {analysis.analysis_time_ms}ms</span>
               </div>
 
+              {/* Risk assessment banner */}
+              <Alert variant={analysis.risk_assessment.level === 'low' ? 'success' : analysis.risk_assessment.level === 'medium' ? 'warning' : 'error'}>
+                <strong style={{color: riskColors[analysis.risk_assessment.level]}}>{analysis.risk_assessment.level.toUpperCase()} RISK</strong> ({analysis.risk_assessment.score}/100) — {analysis.crime_type_detected}
+              </Alert>
+
               {/* Tabs */}
-              <div className="flex border-b border-white/[0.07] mb-4">
-                {(['sections','judgments','recommendations'] as const).map(t => (
+              <div className="flex border-b border-white/[0.07] mb-4 flex-wrap">
+                {(['sections','judgments','entities','timeline','recommendations'] as const).map(t => (
                   <button
                     key={t}
                     onClick={() => setActiveTab(t)}
                     className={`px-4 py-2 text-xs font-medium border-b-2 -mb-px transition-colors capitalize ${activeTab===t?'border-accent-blue text-accent-blue':'border-transparent text-text-secondary hover:text-text-primary'}`}
                   >
                     {t === 'sections' ? `Legal Sections (${analysis.sections.length})` :
-                     t === 'judgments' ? `Judgments (${analysis.judgments.length})` : 'Recommendations'}
+                     t === 'judgments' ? `Judgments (${analysis.judgments.length})` :
+                     t === 'entities' ? 'Entities' :
+                     t === 'timeline' ? 'Timeline' : 'Recommendations'}
                   </button>
                 ))}
               </div>
 
               {activeTab === 'sections' && (
-                <div>{analysis.sections.map((s, i) => <LegalSectionCard key={i} section={s} />)}</div>
+                analysis.sections.length === 0
+                  ? <div className="text-sm text-text-secondary">No applicable sections identified from this text.</div>
+                  : <div>{analysis.sections.map((s, i) => <LegalSectionCard key={i} section={s} />)}</div>
               )}
 
               {activeTab === 'judgments' && (
+                analysis.judgments.length === 0 ? (
+                  <EmptyState icon="📭" title="No indexed judgments available" description={analysis.judgments_message || 'Please ingest a real legal corpus.'} />
+                ) : (
                 <div className="space-y-3">
                   {analysis.judgments.map((j, i) => (
                     <div key={i} className="card-sm" style={{borderLeft:`3px solid #b57bee`}}>
@@ -189,10 +172,40 @@ export default function LegalAIPage() {
                       </div>
                       <div className="text-xs text-text-muted mb-2">{j.court}{j.year && ` · ${j.year}`}{j.citation && ` · ${j.citation}`}</div>
                       <div className="text-xs text-text-secondary leading-relaxed">{j.summary}</div>
-                      <button className="btn-secondary text-xs px-3 py-1.5 mt-2">📋 Add to Chargesheet</button>
                     </div>
                   ))}
                 </div>
+                )
+              )}
+
+              {activeTab === 'entities' && (
+                <div className="space-y-4">
+                  {(['victims','suspects','witnesses'] as const).map(kind => (
+                    <div key={kind}>
+                      <div className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-2 capitalize">{kind}</div>
+                      {analysis.entities[kind].length === 0 ? (
+                        <div className="text-xs text-text-muted">None identified in the text.</div>
+                      ) : analysis.entities[kind].map((e, i) => (
+                        <div key={i} className="text-sm mb-1"><span className="font-medium">{e.name}</span>{e.details && <span className="text-text-secondary text-xs"> — {e.details}</span>}</div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {activeTab === 'timeline' && (
+                analysis.timeline.length === 0 ? (
+                  <div className="text-sm text-text-secondary">No chronological events could be identified.</div>
+                ) : (
+                <div className="space-y-2">
+                  {analysis.timeline.map((t, i) => (
+                    <div key={i} className="flex gap-2 text-sm">
+                      <span className="font-mono text-xs text-text-muted flex-shrink-0 w-24">{t.date || '—'}</span>
+                      <span className="text-text-secondary">{t.description}</span>
+                    </div>
+                  ))}
+                </div>
+                )
               )}
 
               {activeTab === 'recommendations' && (
@@ -202,6 +215,13 @@ export default function LegalAIPage() {
                     <div key={i} className="flex items-start gap-2 text-sm">
                       <span className="text-accent-blue font-bold mt-0.5">{i+1}.</span>
                       <span className="text-text-secondary">{r}</span>
+                    </div>
+                  ))}
+                  <div className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-2 mt-4">Risk Factors</div>
+                  {analysis.risk_assessment.factors.map((f, i) => (
+                    <div key={i} className="flex items-start gap-2 text-sm">
+                      <span className="text-amber-400 mt-0.5">⚠</span>
+                      <span className="text-text-secondary">{f}</span>
                     </div>
                   ))}
                   <div className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-2 mt-4">Key Facts Detected</div>
@@ -225,6 +245,9 @@ export default function LegalAIPage() {
 
           {/* Messages */}
           <div className="flex-1 overflow-y-auto space-y-3 pr-1 mb-3">
+            {messages.length === 0 && (
+              <EmptyState icon="💬" title="Ask the Legal AI" description="Select a case above, or just start typing a question." />
+            )}
             {messages.map((m, i) => (
               <div key={i} className={`flex gap-2.5 ${m.role === 'user' ? 'flex-row-reverse' : ''}`}>
                 {m.role === 'assistant' && (
@@ -253,6 +276,8 @@ export default function LegalAIPage() {
             <div ref={messagesEndRef} />
           </div>
 
+          {chatError && <Alert variant="error" icon="⚠️">{chatError}</Alert>}
+
           {/* Quick prompts */}
           <div className="flex flex-wrap gap-1.5 mb-2">
             {['Which BNS section for remote access fraud?','How to file chargesheet?','Evidence admissibility under BSA?','Remand procedure BNSS 187?'].map(q=>(
@@ -271,12 +296,13 @@ export default function LegalAIPage() {
               onChange={e => setChatInput(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendChat()}
             />
-            <button className="btn-primary px-3" onClick={sendChat} disabled={chatLoading}>
+            <button className="btn-primary px-3" onClick={sendChat} disabled={chatLoading || !chatInput.trim()}>
               <Send size={14} />
             </button>
           </div>
         </div>
       </div>
+      )}
     </AppShell>
   )
 }

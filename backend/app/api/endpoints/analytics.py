@@ -1,4 +1,5 @@
 """Analytics Endpoint"""
+from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, text
@@ -40,3 +41,31 @@ async def crime_distribution(
         .order_by(func.count(Case.id).desc())
     )
     return [{"category": row.crime_category.value, "count": row.count} for row in result]
+
+@router.get("/weekly-trend")
+async def weekly_trend(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Real case-registration counts per day for the last 7 days."""
+    since = datetime.now(timezone.utc) - timedelta(days=7)
+    result = await db.execute(
+        select(func.date(Case.created_at).label("day"), func.count(Case.id).label("count"))
+        .where(Case.created_at >= since)
+        .group_by(func.date(Case.created_at))
+        .order_by(func.date(Case.created_at))
+    )
+    return [{"day": str(row.day), "cases": row.count} for row in result]
+
+@router.get("/document-stats")
+async def document_stats(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Real document-generation counts grouped by doc type."""
+    result = await db.execute(
+        select(Document.doc_type, func.count(Document.id).label("count"))
+        .group_by(Document.doc_type)
+        .order_by(func.count(Document.id).desc())
+    )
+    return [{"doc_type": row.doc_type.value, "count": row.count} for row in result]

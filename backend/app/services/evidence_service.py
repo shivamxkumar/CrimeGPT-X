@@ -15,6 +15,11 @@ from app.core.config import settings
 logger = logging.getLogger(__name__)
 
 
+class EvidenceStorageError(Exception):
+    """Raised when evidence cannot be durably stored — chain of custody must never degrade
+    to ephemeral local storage silently."""
+
+
 class EvidenceService:
     """Secure evidence storage and chain-of-custody management"""
 
@@ -99,24 +104,18 @@ class EvidenceService:
         content_type: str,
     ) -> str:
         minio = self._get_minio()
-        if minio:
-            try:
-                minio.put_object(
-                    bucket, object_name, BytesIO(data), len(data),
-                    content_type=content_type
-                )
-                return f"{bucket}/{object_name}"
-            except Exception as e:
-                logger.error(f"MinIO upload failed: {e}")
+        if not minio:
+            raise EvidenceStorageError("Evidence object storage (MinIO/S3) is not configured or unreachable")
 
-        # Fallback: local filesystem
-        import os
-        local_dir = f"/tmp/evidence/{bucket}"
-        os.makedirs(local_dir, exist_ok=True)
-        local_path = f"{local_dir}/{object_name.replace('/', '_')}"
-        with open(local_path, "wb") as f:
-            f.write(data)
-        return local_path
+        try:
+            minio.put_object(
+                bucket, object_name, BytesIO(data), len(data),
+                content_type=content_type
+            )
+            return f"{bucket}/{object_name}"
+        except Exception as e:
+            logger.error(f"MinIO upload failed: {e}")
+            raise EvidenceStorageError(f"Evidence upload failed: {e}") from e
 
     def get_presigned_url(self, file_path: str, expires_minutes: int = 60) -> Optional[str]:
         """Generate time-limited presigned URL for evidence access"""

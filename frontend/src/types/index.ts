@@ -64,6 +64,10 @@ export interface Case {
   io_officer_id: string
   created_at: string
   updated_at?: string
+  evidence_count: number
+  document_count: number
+  diary_count: number
+  witness_count: number
 }
 
 export interface CaseListItem {
@@ -105,11 +109,37 @@ export interface Judgment {
   relevance_score: number
 }
 
+export interface ExtractedEntity {
+  name: string
+  details?: string
+}
+
+export interface ExtractedEntities {
+  victims: ExtractedEntity[]
+  suspects: ExtractedEntity[]
+  witnesses: ExtractedEntity[]
+}
+
+export interface TimelineEvent {
+  date?: string
+  description: string
+}
+
+export interface RiskAssessment {
+  level: 'low' | 'medium' | 'high' | 'critical'
+  score: number
+  factors: string[]
+}
+
 export interface AIAnalysisResult {
   sections: LegalSection[]
   judgments: Judgment[]
+  judgments_message?: string | null
   crime_type_detected: string
   key_facts: string[]
+  entities: ExtractedEntities
+  timeline: TimelineEvent[]
+  risk_assessment: RiskAssessment
   investigation_recommendations: string[]
   model_used: string
   analysis_time_ms: number
@@ -127,6 +157,8 @@ export interface Evidence {
   sha256_hash: string
   is_verified: boolean
   description?: string
+  ocr_text?: string
+  ai_analysis?: { relevance_summary?: string; key_points?: string[]; suggested_tags?: string[]; error?: string }
   tags: string[]
   custody_chain: CustodyEntry[]
   created_at: string

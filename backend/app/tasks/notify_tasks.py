@@ -36,11 +36,17 @@ def send_email(to: str, subject: str, body: str, html_body: str = None):
 
 @celery_app.task(name="app.tasks.notify_tasks.send_deadline_alerts")
 def send_deadline_alerts():
-    """Periodic task — check for upcoming court deadlines and send alerts"""
+    """Periodic task — check for upcoming court deadlines and create real alerts"""
     import asyncio
-    from sqlalchemy import select
-    from datetime import datetime, timedelta
+    from datetime import datetime
+    from app.core.database import AsyncSessionLocal
+    from app.services.notification_service import notification_service
+
+    async def _run():
+        async with AsyncSessionLocal() as db:
+            return await notification_service.check_remand_deadlines(db)
+
     logger.info("Checking for upcoming case deadlines...")
-    # In production: query DB for cases with court_submission_date in next 48 hours
-    # and create Notification records + send emails
-    return {"checked": True, "timestamp": datetime.utcnow().isoformat()}
+    count = asyncio.run(_run())
+    logger.info(f"Created {count} deadline alert(s)")
+    return {"alerts_created": count, "timestamp": datetime.utcnow().isoformat()}

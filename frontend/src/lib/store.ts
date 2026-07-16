@@ -63,3 +63,19 @@ export const useIsSHO    = () => useAuthStore(s => ['admin','sho'].includes(s.us
 export const useIsIO     = () => useAuthStore(s => s.user?.role === 'io')
 export const useIsLegal  = () => useAuthStore(s => s.user?.role === 'legal')
 export const useRoleIn   = (...roles: string[]) => useAuthStore(s => roles.includes(s.user?.role || ''))
+
+// ─── Selected Case (shared across Evidence/Diary/Documents/Legal pages) ───
+interface CaseSelectionState {
+  selectedCaseId: string | null
+  setSelectedCaseId: (caseId: string | null) => void
+}
+
+export const useCaseSelectionStore = create<CaseSelectionState>()(
+  persist(
+    (set) => ({
+      selectedCaseId: null,
+      setSelectedCaseId: (caseId) => set({ selectedCaseId: caseId }),
+    }),
+    { name: 'crimegpt-selected-case' }
+  )
+)

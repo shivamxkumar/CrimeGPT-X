@@ -8,6 +8,8 @@ class Settings(BaseSettings):
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = False
     SECRET_KEY: str = secrets.token_urlsafe(32)
+    PORT: int = 8000
+    UPLOAD_FOLDER: str = "/tmp/crimegpt-uploads"
 
     # Database
     DATABASE_URL: str = "postgresql+asyncpg://crimegpt:crimegpt_pass@db:5432/crimegpt_db"
@@ -22,17 +24,15 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 480  # 8 hours for police shifts
 
-    # AI
-    ANTHROPIC_API_KEY: str = ""
-    OPENAI_API_KEY: str = ""
-    AI_MODEL: str = "claude-sonnet-4-20250514"
+    # AI (Google Gemini)
+    GEMINI_API_KEY: str = ""
+    AI_MODEL: str = "gemini-3.5-flash"  # or "gemini-3.1-pro-preview" for higher-quality analysis
     AI_MAX_TOKENS: int = 4096
 
     # ChromaDB
     CHROMA_HOST: str = "chromadb"
     CHROMA_PORT: int = 8000
     CHROMA_COLLECTION_JUDGMENTS: str = "landmark_judgments"
-    CHROMA_COLLECTION_BNS: str = "bns_sections"
 
     # MinIO
     MINIO_ENDPOINT: str = "minio:9000"

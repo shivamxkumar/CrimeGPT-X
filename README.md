@@ -1,8 +1,6 @@
 # 🔍 CrimeGPT-X — AI-Powered Crime Documentation & Legal Intelligence Platform
 
 > **"From FIR to Arrest — One Intelligent Investigation Platform"**
->
-> Built for KANAD S.H.I.E.L.D. 2026 Hackathon · Ahmedabad Cyber Crime Branch
 
 ---
 
@@ -12,43 +10,55 @@
 2. [Key Features](#key-features)
 3. [Architecture](#architecture)
 4. [Technology Stack](#technology-stack)
-5. [Quick Start](#quick-start)
-6. [Demo Walkthrough](#demo-walkthrough)
-7. [API Documentation](#api-documentation)
-8. [Module Breakdown](#module-breakdown)
-9. [AI Components](#ai-components)
+5. [Local Development](#local-development)
+6. [Environment Variables](#environment-variables)
+7. [Ingesting a Real Judgments Corpus](#ingesting-a-real-judgments-corpus)
+8. [API Documentation](#api-documentation)
+9. [Production Deployment](#production-deployment)
 10. [Security](#security)
-11. [Deployment](#deployment)
-12. [Project Structure](#project-structure)
+11. [Project Structure](#project-structure)
 
 ---
 
 ## Overview
 
-CrimeGPT-X is a full-stack AI-powered police investigation platform that eliminates repetitive data entry and automates legal documentation for cyber crime cases. Officers enter case data **once** — CrimeGPT-X automatically generates all required legal documents, suggests applicable BNS/IT Act sections, retrieves landmark judgments, and maintains a timestamped investigation diary.
+CrimeGPT-X is a full-stack AI-powered police investigation platform that eliminates
+repetitive data entry and automates legal documentation for cyber crime cases.
+Officers enter case data **once** — CrimeGPT-X uses Google Gemini to suggest
+applicable BNS/BNSS/IT Act sections, extract victims/suspects/witnesses and a
+case timeline from FIR text, assess investigation risk, retrieve indexed
+landmark judgments via RAG, generate legal documents, and maintain a
+timestamped investigation diary — all backed by real OCR, a real Postgres
+database, and real object storage.
 
-### Core Problem Solved
-Police officers repeatedly enter the same information across multiple legal documents (chargesheet, remand request, panchanama, medical letter, etc.). CrimeGPT-X maintains a **single source of truth** per case and auto-generates all required documents.
+**No mock data, no fallback responses, no fabricated AI output.** Every
+feature calls real backend logic. If an external dependency (Gemini,
+ChromaDB, MinIO) is unavailable, the API returns a real error — it never
+silently substitutes canned content.
 
 ---
 
 ## Key Features
 
-| Feature | Technology | Status |
-|---------|-----------|--------|
-| AI BNS Section Recommendation | Claude Sonnet 4 (Anthropic) | ✅ Live |
-| FIR OCR Extraction | EasyOCR + Tesseract | ✅ Live |
-| Landmark Judgment RAG | ChromaDB + Sentence Transformers | ✅ Live |
-| Legal AI Chat Assistant | Claude Sonnet 4 | ✅ Live |
-| Auto Document Generation | Claude Sonnet 4 + Jinja2 | ✅ Live |
-| SHA-256 Evidence Integrity | Python hashlib | ✅ Live |
-| Chain of Custody Tracking | PostgreSQL JSONB | ✅ Live |
-| Multilingual Support | EasyOCR (EN/HI/GU) | ✅ Live |
-| Role-Based Access Control | JWT + FastAPI | ✅ Live |
-| Immutable Audit Trail | PostgreSQL + Middleware | ✅ Live |
-| Cyber Threat Detection | Claude AI | ✅ Live |
-| Case Diary Automation | Auto on every action | ✅ Live |
-| Real-time Notifications | Redis pub/sub | ✅ Live |
+| Feature | Technology | Notes |
+|---------|-----------|-------|
+| BNS/BNSS/IT Act Section Recommendation | Google Gemini | Live per-FIR inference, not a lookup table |
+| Entity Extraction (victims/suspects/witnesses) | Google Gemini | Extracted only from text actually present in the FIR |
+| Timeline Generation | Google Gemini | Chronological reconstruction from the FIR narrative |
+| Risk Assessment | Google Gemini | Investigation urgency/risk scoring with factors |
+| FIR OCR Extraction | EasyOCR + Tesseract | Real multi-language OCR (EN/HI/GU) |
+| Landmark Judgment RAG Search | ChromaDB + Sentence Transformers | Returns real indexed judgments, or a clear empty-state message if none are ingested yet — never fabricated |
+| Legal AI Chat / Question Answering | Google Gemini | Case-context-aware conversational assistant |
+| Cyber Threat Detection | Google Gemini | URL/message/email/phone pattern analysis |
+| Evidence Relevance Analysis | Google Gemini + OCR | Grounded in the evidence file's own extracted text |
+| SHA-256 Evidence Integrity | Python hashlib | Real hash on every upload |
+| Chain of Custody Tracking | PostgreSQL JSONB | Immutable per-evidence custody log |
+| Auto Document Generation | Jinja2 + Gemini fallback | Real case + evidence data populate every template |
+| PDF / DOCX Export | WeasyPrint + python-docx | Renders the document's actual generated content |
+| Role-Based Access Control | JWT + FastAPI | 4 roles: IO, SHO, Legal, Admin |
+| Immutable Audit Trail | PostgreSQL + Middleware | Every write action logged with IP/user/timestamp |
+| Case Diary Automation | Auto on every action | Real diary entries, not scripted demo text |
+| Scheduled Deadline Alerts | Celery Beat | Real query against court-submission deadlines every 6h |
 
 ---
 
@@ -71,12 +81,12 @@ Police officers repeatedly enter the same information across multiple legal docu
 │  JWT RBAC · Audit Middleware · Async SQLAlchemy                 │
 ├────────┬─────────────┬─────────────┬───────────────────────────┤
 │ AI     │ OCR         │ Evidence    │ Celery Workers             │
-│ Engine │ Service     │ Service     │ (Async Tasks)              │
-│ Claude │ EasyOCR     │ MinIO+SHA256│ AI Jobs · Notifications   │
+│ Engine │ Service     │ Service     │ (Async Tasks + Beat)       │
+│ Gemini │ EasyOCR     │ MinIO+SHA256│ AI Jobs · Notifications   │
 └────┬───┴──────┬──────┴─────┬───────┴───────────────────────────┘
      │          │             │
 ┌────▼──┐ ┌───▼──────┐ ┌────▼──────┐ ┌──────────┐ ┌──────────┐
-│Claude │ │ ChromaDB │ │PostgreSQL │ │  MinIO   │ │  Redis   │
+│Gemini │ │ ChromaDB │ │PostgreSQL │ │  MinIO   │ │  Redis   │
 │  API  │ │ Vectors  │ │  +pg_trgm │ │ Evidence │ │  Cache   │
 │       │ │Judgments │ │  Cases DB │ │  Store   │ │  Queue   │
 └───────┘ └──────────┘ └───────────┘ └──────────┘ └──────────┘
@@ -91,12 +101,10 @@ Police officers repeatedly enter the same information across multiple legal docu
 |-----------|-----------|
 | Framework | Next.js 14 (App Router) |
 | Language | TypeScript |
-| Styling | TailwindCSS + Custom CSS Variables |
-| State Management | Zustand + React Query |
+| Styling | TailwindCSS |
+| State / Data | Zustand + React Query |
 | Charts | Recharts |
-| Forms | React Hook Form + Zod |
 | File Upload | React Dropzone |
-| Animations | Framer Motion |
 | Notifications | React Hot Toast |
 
 ### Backend
@@ -107,422 +115,300 @@ Police officers repeatedly enter the same information across multiple legal docu
 | Database | PostgreSQL 16 + pg_trgm |
 | Migrations | Alembic |
 | Auth | JWT + bcrypt (passlib) |
-| Task Queue | Celery + Redis |
+| Task Queue | Celery + Redis + Celery Beat |
 | Validation | Pydantic v2 |
 
 ### AI / ML
 | Component | Technology |
 |-----------|-----------|
-| LLM | Claude Sonnet 4 (Anthropic) |
-| RAG | LangChain + ChromaDB |
-| Embeddings | sentence-transformers (all-MiniLM-L6-v2) |
+| LLM | Google Gemini (`google-genai` SDK) |
+| RAG | ChromaDB + sentence-transformers (all-MiniLM-L6-v2) |
 | OCR Primary | EasyOCR (English + Hindi + Gujarati) |
 | OCR Fallback | Tesseract + pytesseract |
-| PDF Processing | pdf2image + Pillow |
+| PDF Export | WeasyPrint (real HTML → PDF) |
+| DOCX Export | python-docx + BeautifulSoup (real HTML → DOCX) |
 
 ### Infrastructure
 | Component | Technology |
 |-----------|-----------|
 | Containerization | Docker + Docker Compose |
-| Object Storage | MinIO (S3-compatible) |
-| Cache | Redis 7 |
+| Object Storage | MinIO (S3-compatible; swap for AWS S3/Cloudflare R2 in prod) |
+| Cache / Broker | Redis 7 |
 | Reverse Proxy | Nginx |
 | Monitoring | Flower (Celery) + pgAdmin |
 
 ---
 
-## Quick Start
+## Local Development
 
 ### Prerequisites
 - Docker & Docker Compose v2+
-- Node.js 20+ (for local frontend dev)
-- Python 3.12+ (for local backend dev)
-- Anthropic API Key
+- Node.js 20+ (frontend dev outside Docker)
+- Python 3.12+ (backend dev outside Docker)
+- A [Gemini API key](https://aistudio.google.com/apikey)
 
-### 1. Clone & Configure
+### 1. Clone & configure
+
 ```bash
-git clone https://github.com/your-org/crimegpt.git
-cd crimegpt
-
-# Copy environment file
+git clone <your-fork-url>
+cd crimegpt-x
 cp .env.example .env
-
-# Set your Anthropic API key
-echo "ANTHROPIC_API_KEY=sk-ant-your-key-here" >> .env
+# Edit .env and set GEMINI_API_KEY (required) and JWT_SECRET_KEY/SECRET_KEY
 ```
 
-### 2. Launch with Docker Compose
-```bash
-# Start all services
-docker compose up -d
+### 2. Full stack via Docker Compose
 
-# Watch logs
+```bash
+docker compose up -d
 docker compose logs -f backend
 
-# Seed the vector database with landmark judgments
-docker compose exec backend python scripts/seed_chroma.py
+# Ensure the ChromaDB judgments collection exists (starts empty — see below)
+docker compose exec backend python scripts/ingest_legal_corpus.py
 ```
 
-### 3. Access the Application
 | Service | URL |
 |---------|-----|
-| **CrimeGPT-X App** | http://localhost |
-| Backend API | http://localhost:8000/api/docs |
+| CrimeGPT-X App | http://localhost |
+| Backend API docs | http://localhost:8000/api/docs |
 | MinIO Console | http://localhost:9001 |
-| pgAdmin | http://localhost:5050 |
+| pgAdmin (dev profile) | http://localhost:5050 |
 | Flower (Celery) | http://localhost:5555 |
 
-### 4. Login Credentials (Demo)
-| Role | Badge Number | Password |
-|------|-------------|----------|
-| Investigation Officer | AHM-24-IO-047 | demo1234 |
-| SHO / Supervisor | AHM-23-SHO-012 | demo1234 |
-| Legal Advisor | LEG-24-001 | demo1234 |
-| Administrator | ADM-24-001 | demo1234 |
+Initial accounts are seeded by `scripts/init_db.sql` (badge number / password
+`demo1234` for each role) — rotate these passwords before any real
+deployment.
 
-### Local Development
+### 3. Backend outside Docker
+
 ```bash
-# Backend
 cd backend
 pip install -r requirements.txt
+alembic upgrade head
 uvicorn app.main:app --reload --port 8000
+```
 
-# Frontend (separate terminal)
+### 4. Frontend outside Docker
+
+```bash
 cd frontend
 npm install
-npm run dev  # → http://localhost:3000
+npm run dev   # → http://localhost:3000
+```
 
-# Seed ChromaDB (after starting chromadb service)
-docker compose up -d chromadb
-python scripts/seed_chroma.py
+### 5. Run the test suite
+
+```bash
+cd backend
+pip install -r tests/requirements-test.txt
+pytest tests/ -v
 ```
 
 ---
 
-## Demo Walkthrough
+## Environment Variables
 
-**Target: Complete demo in under 3 minutes**
+See `.env.example` for the full list with comments. The required ones:
 
-### Step-by-Step (Judge Demo Flow)
+| Variable | Purpose |
+|----------|---------|
+| `GEMINI_API_KEY` | Google Gemini API key — every AI feature requires this |
+| `AI_MODEL` | Gemini model id (default `gemini-3.5-flash`) |
+| `DATABASE_URL` | Postgres connection string (`postgresql+asyncpg://...`) |
+| `JWT_SECRET_KEY` / `SECRET_KEY` | Random secrets — generate with `openssl rand -hex 32` |
+| `REDIS_URL` | Celery broker/result backend |
+| `CHROMA_HOST` / `CHROMA_PORT` | ChromaDB for judgment RAG |
+| `MINIO_ENDPOINT` / `MINIO_ACCESS_KEY` / `MINIO_SECRET_KEY` | Evidence/document object storage |
+| `UPLOAD_FOLDER`, `PORT` | Local temp-file path and backend listen port |
+| `NEXT_PUBLIC_API_URL` | Frontend → backend base URL |
 
-**1. Login** (15 sec)
-- Open http://localhost
-- Login: `AHM-24-IO-047` / `demo1234`
-- Show the Command Dashboard with live case statistics
+**Never commit `.env`.** It's already gitignored.
 
-**2. FIR Upload + OCR** (30 sec)
-- Navigate to **FIR Upload**
-- Drop any PDF/image (or click Upload FIR)
-- Watch OCR progress bar extract 18 fields automatically
-- Show editable extracted fields
+---
 
-**3. AI Legal Analysis** (45 sec)
-- Click "Analyze with AI → Legal Sections"
-- Watch AI thinking animation
-- BNS 318 (93%), BNS 319 (91%), IT Act 66C (88%), IT Act 66D (86%) appear
-- Ask Legal AI Chat: *"What evidence is needed for IT Act 66D prosecution?"*
-- Get real AI response
+## Ingesting a Real Judgments Corpus
 
-**4. Landmark Judgments** (20 sec)
-- Navigate to **Judgment Search**
-- See "State of Karnataka vs. Soman — 94% Match"
-- Click "Add to Chargesheet"
+The landmark-judgment RAG search never contains sample or fabricated case
+law. Until you ingest a real corpus, `GET /api/v1/ai/judgments/search` and
+the judgment tab in the Legal AI Engine will show:
 
-**5. Evidence Vault** (20 sec)
-- Navigate to **Evidence Vault**
-- Drop a file → SHA-256 hash generates instantly
-- Show chain of custody panel
+> "No indexed judgments available. Please ingest a real legal corpus."
 
-**6. Document Generation** (30 sec)
-- Navigate to **Documents**
-- Click "Generate" on Chargesheet
-- Preview AI-generated chargesheet with all case data pre-filled
-- Click "Export PDF"
+To index real judgments, prepare a JSON file:
 
-**7. Case Diary** (15 sec)
-- Navigate to **Case Diary**
-- Show auto-populated timeline (every action logged automatically)
+```json
+[
+  {
+    "title": "Case Name vs. Other Party",
+    "citation": "AIR 2022 SC 1847",
+    "court": "Supreme Court of India",
+    "year": "2022",
+    "text": "Full judgment text or a substantive verified summary",
+    "relevance": "Why this precedent matters",
+    "sections": ["BNS 318", "IT Act 66C"]
+  }
+]
+```
 
-**8. Analytics + Admin** (15 sec)
-- Show Analytics → crime distribution pie chart
-- Show Admin → Audit Logs with IP tracking
+Then run:
+
+```bash
+docker compose exec backend python scripts/ingest_legal_corpus.py /path/to/judgments.json
+# or locally:
+python scripts/ingest_legal_corpus.py /path/to/judgments.json
+```
+
+Re-running the script with an updated file upserts existing entries by a
+stable id derived from title+citation — it never duplicates.
 
 ---
 
 ## API Documentation
 
-Interactive Swagger UI available at: `http://localhost:8000/api/docs`
+Interactive Swagger UI: `http://localhost:8000/api/docs`
 
 ### Core Endpoints
 
-#### Authentication
 ```
-POST /api/v1/auth/login          # JWT login
-POST /api/v1/auth/register       # Register new officer
-GET  /api/v1/auth/me             # Get current user
-POST /api/v1/auth/logout         # Logout
-```
+POST /api/v1/auth/login                       JWT login
+POST /api/v1/auth/register                    Register new officer
+GET  /api/v1/auth/me                          Current user
 
-#### Cases
-```
-GET    /api/v1/cases             # List cases (with filters)
-POST   /api/v1/cases             # Create new case
-GET    /api/v1/cases/{id}        # Get case details
-PATCH  /api/v1/cases/{id}        # Update case
-GET    /api/v1/cases/stats/summary  # Dashboard stats
-```
+GET    /api/v1/cases                          List cases (filters)
+POST   /api/v1/cases                          Create case
+GET    /api/v1/cases/{case_id}                Case detail (accepts case_id or UUID)
+PATCH  /api/v1/cases/{case_id}                Update case
+GET    /api/v1/cases/stats/summary            Dashboard stats
 
-#### AI Legal Intelligence
-```
-POST /api/v1/ai/analyze          # FIR text → BNS sections
-POST /api/v1/ai/chat             # Legal AI conversation
-POST /api/v1/ai/cyber-analyze    # Cyber threat detection
-```
+POST /api/v1/fir/upload                       FIR upload → real OCR extraction
 
-#### FIR & OCR
-```
-POST /api/v1/fir/upload          # Upload FIR → OCR extraction
-```
+POST /api/v1/ai/analyze                       FIR text → sections/entities/timeline/risk (Gemini)
+POST /api/v1/ai/chat                          Legal AI conversation (Gemini)
+GET  /api/v1/ai/judgments/search              Real RAG judgment search
+POST /api/v1/ai/cyber-analyze                 Cyber threat pattern detection (Gemini)
 
-#### Documents
-```
-POST /api/v1/documents/generate  # Generate legal document
-GET  /api/v1/documents/{case_id} # List case documents
-```
+POST /api/v1/documents/generate               Generate legal document
+GET  /api/v1/documents/by-case/{case_id}      List documents for a case
+GET  /api/v1/documents/{doc_id}/export/pdf    Real PDF export
+GET  /api/v1/documents/{doc_id}/export/docx   Real DOCX export
 
-#### Evidence
-```
-POST /api/v1/evidence/{case_id}/upload  # Upload evidence file
-GET  /api/v1/evidence/{case_id}         # List evidence
-```
+POST /api/v1/evidence/{case_id}/upload        Upload evidence (hash + AI relevance analysis)
+GET  /api/v1/evidence/{case_id}                List evidence
 
-#### Analytics
-```
-GET /api/v1/analytics/overview           # Summary stats
-GET /api/v1/analytics/crime-distribution # By category
+GET  /api/v1/diary/{case_id}                  Case diary
+GET  /api/v1/diary/recent                     Recent activity across visible cases
+
+GET  /api/v1/analytics/overview               Summary stats
+GET  /api/v1/analytics/crime-distribution     By category
+GET  /api/v1/analytics/weekly-trend           Cases registered per day (7d)
+GET  /api/v1/analytics/document-stats         Documents generated by type
+
+GET  /api/v1/admin/system-status              Real infra health check (admin only)
 ```
 
 ---
 
-## Module Breakdown
+## Production Deployment
 
-### Module 1: Authentication & RBAC
-- JWT tokens (8-hour validity for police shifts)
-- 4 roles: IO, SHO, Legal Advisor, Admin
-- Badge number + password login
-- OTP verification (framework ready)
+### Frontend → Vercel
 
-### Module 2: Case Management
-- Auto-generated sequential Case IDs (CC/YYYY/NNNN)
-- Single source of truth — no duplicate fields
-- Full victim + accused + witness data model
-- PostgreSQL full-text search with pg_trgm
-
-### Module 3: FIR OCR Pipeline
-- EasyOCR primary (multi-language: EN/HI/GU)
-- Tesseract fallback for low-quality scans
-- Regex NER for 12+ structured fields
-- Confidence scoring per extracted field
-
-### Module 4: AI Legal Intelligence Engine
-- Claude Sonnet 4 analyzes FIR text
-- Returns BNS, BNSS, IT Act sections with confidence scores
-- Structured JSON output with legal reasoning
-- Fallback logic when API unavailable
-
-### Module 5: RAG Judgment Retrieval
-- ChromaDB vector store with 6+ landmark judgments seeded
-- Sentence Transformers (all-MiniLM-L6-v2) for embeddings
-- Top-K cosine similarity retrieval
-- Section-aware query construction
-
-### Module 6: Document Generation
-- 8 document types: Chargesheet, Remand, Panchanama, Seizure Receipt, etc.
-- Claude generates HTML from structured case data prompts
-- DOCX export via python-docx
-- PDF via ReportLab / WeasyPrint
-- Multilingual output (EN/HI/GU)
-
-### Module 7: Case Diary Automation
-- Every system action auto-creates a diary entry
-- Immutable chronological timeline
-- Manual notes support
-- Chain of custody integrated
-
-### Module 8: Evidence Management
-- SHA-256 + MD5 hash on upload (integrity proof)
-- MinIO S3-compatible object storage
-- Chain of custody JSON tracking
-- Image manipulation detection via PIL EXIF
-- BSA Section 63 compliant metadata
-
-### Module 9: Cyber Threat Detection
-- URL/domain age analysis
-- Chat message fraud pattern detection
-- AI-powered classification with section mapping
-- CERT-In integration ready
-
-### Module 10: Analytics Engine
-- Crime distribution charts (Recharts)
-- Officer performance scoring
-- Monthly trend analysis
-- Document generation statistics
-
----
-
-## AI Components
-
-### Legal Analysis Prompt Architecture
-```python
-system = """
-You are a senior legal AI for Gujarat Police Cyber Crime Branch.
-Analyze FIRs and suggest BNS, BNSS, BSA, and IT Act sections.
-Return ONLY structured JSON with confidence scores.
-"""
+```bash
+cd frontend
+npm i -g vercel
+vercel login
+vercel link
+vercel env add NEXT_PUBLIC_API_URL production   # https://<your-backend>.up.railway.app/api/v1
+vercel --prod
 ```
 
-### RAG Pipeline
-```
-FIR Text → Sentence Embedding → ChromaDB Query →
-Top-K Judgments → AI Context Injection → Legal Chat Response
+`frontend/vercel.json` is preconfigured for the Next.js build.
+
+### Backend + Postgres → Railway
+
+```bash
+npm i -g @railway/cli
+railway login
+railway init
+railway add --database postgres
+railway up   # deploys backend/ using backend/Dockerfile
 ```
 
-### Document Generation Template
-```
-Case Data (JSON) → Jinja2 Template + AI → HTML → PDF/DOCX
+Set these variables in the Railway service (Settings → Variables):
+`GEMINI_API_KEY`, `JWT_SECRET_KEY`, `SECRET_KEY`, `ALLOWED_ORIGINS`
+(include your Vercel URL), plus `REDIS_URL`/`CHROMA_HOST`/`MINIO_*` pointed
+at managed equivalents (see below). Railway injects `DATABASE_URL` and
+`PORT` automatically — the Dockerfile's `CMD` already binds `${PORT}`.
+
+**Supporting services on Railway** (no managed plugins exist for these —
+each needs its own Railway service from the public Docker image, or an
+external managed alternative):
+- **Redis**: deploy the `redis:7-alpine` image as a Railway service, or use Railway's Redis template.
+- **ChromaDB**: deploy `chromadb/chroma:0.5.23` as a Railway service.
+- **Object storage**: deploy `minio/minio` as a Railway service, **or** point
+  `MINIO_ENDPOINT`/`MINIO_ACCESS_KEY`/`MINIO_SECRET_KEY` at a real
+  S3-compatible provider (AWS S3, Cloudflare R2, Backblaze B2) — the `minio`
+  Python client works against any S3-compatible endpoint.
+- **Celery worker + beat**: deploy `backend/Dockerfile` again as two more
+  Railway services with start commands
+  `celery -A app.worker worker --loglevel=info -Q default,ai,documents,notifications`
+  and `celery -A app.worker beat --loglevel=info`.
+
+### Verify production builds locally before deploying
+
+```bash
+cd frontend && npm run build
+cd backend && docker build -t crimegpt-backend .
 ```
 
 ---
 
 ## Security
 
-- **JWT Authentication** — 8-hour tokens, RS256 signing ready
+- **JWT Authentication** — 8-hour tokens
 - **Role-Based Access Control** — 4 tiers, endpoint-level enforcement
-- **Immutable Audit Trail** — every action logged with IP, user, timestamp
-- **Evidence Integrity** — SHA-256 hash on upload, verify on access
+- **Immutable Audit Trail** — every write action logged with IP, user, timestamp
+- **Evidence Integrity** — SHA-256 hash on upload; upload fails loudly (503) if
+  object storage is unreachable rather than silently degrading to local disk
 - **Input Validation** — Pydantic v2 for all API inputs
-- **SQL Injection Prevention** — SQLAlchemy parameterized queries
-- **File Upload Security** — MIME type validation, size limits, virus scan ready
-- **Rate Limiting** — Nginx + Redis based
-- **Security Headers** — X-Frame-Options, CSP, HSTS via Nginx
-
----
-
-## Deployment
-
-### Production Docker Compose
-```bash
-# Production deployment
-ANTHROPIC_API_KEY=your-key docker compose -f docker-compose.yml up -d
-
-# Scale backend workers
-docker compose up -d --scale worker=3
-
-# View all service health
-docker compose ps
-```
-
-### Environment Variables
-```env
-# Required
-ANTHROPIC_API_KEY=sk-ant-...
-DATABASE_URL=postgresql+asyncpg://crimegpt:pass@db:5432/crimegpt_db
-JWT_SECRET_KEY=your-secret-key-min-32-chars
-
-# Optional (defaults work for local)
-REDIS_URL=redis://redis:6379/0
-MINIO_ENDPOINT=minio:9000
-CHROMA_HOST=chromadb
-```
+- **SQL Injection Prevention** — SQLAlchemy parameterized queries throughout
+- **File Upload Security** — MIME type inference, size limits
+- **Secrets** — never committed; `.env` is gitignored, `.env.example` has placeholders only
+- **All AI calls happen server-side** — the Gemini API key never reaches the browser
 
 ---
 
 ## Project Structure
 
 ```
-crimegpt/
+crimegpt-x/
 ├── backend/
 │   ├── app/
-│   │   ├── api/
-│   │   │   ├── v1/__init__.py          # Route registration
-│   │   │   └── endpoints/
-│   │   │       ├── auth.py             # Authentication
-│   │   │       ├── cases.py            # Case CRUD
-│   │   │       ├── fir.py              # FIR upload + OCR
-│   │   │       ├── ai_analysis.py      # AI legal engine
-│   │   │       ├── documents.py        # Doc generation
-│   │   │       ├── evidence.py         # Evidence management
-│   │   │       ├── diary.py            # Case diary
-│   │   │       ├── analytics.py        # Stats + charts
-│   │   │       ├── admin.py            # Admin panel
-│   │   │       └── notifications.py    # Alerts
-│   │   ├── core/
-│   │   │   ├── config.py               # Settings (pydantic-settings)
-│   │   │   ├── database.py             # Async SQLAlchemy
-│   │   │   └── auth.py                 # JWT + RBAC
-│   │   ├── models/
-│   │   │   └── models.py               # All DB models
-│   │   ├── schemas/
-│   │   │   └── schemas.py              # Pydantic schemas
-│   │   ├── services/
-│   │   │   ├── ai_service.py           # Claude + RAG
-│   │   │   ├── ocr_service.py          # EasyOCR + Tesseract
-│   │   │   └── evidence_service.py     # MinIO + hashing
-│   │   └── main.py                     # FastAPI app
+│   │   ├── api/endpoints/       # auth, cases, fir, ai_analysis, documents, evidence, diary, analytics, admin, notifications
+│   │   ├── core/                # config, database, auth, query_helpers
+│   │   ├── models/               # SQLAlchemy models
+│   │   ├── schemas/               # Pydantic schemas
+│   │   ├── services/              # ai_service (Gemini), ocr_service, evidence_service, doc_render_service, notification_service, multilingual_service
+│   │   ├── tasks/                  # Celery tasks (AI, documents, notifications)
+│   │   └── main.py
+│   ├── alembic/                    # migrations
+│   ├── tests/
 │   ├── requirements.txt
 │   └── Dockerfile
 ├── frontend/
 │   └── src/
-│       ├── app/
-│       │   ├── dashboard/page.tsx      # Command dashboard
-│       │   ├── cases/
-│       │   │   ├── page.tsx            # Case list
-│       │   │   ├── new/page.tsx        # New case form
-│       │   │   └── [id]/page.tsx       # Case detail
-│       │   ├── fir/page.tsx            # FIR upload + OCR
-│       │   ├── legal/page.tsx          # AI legal engine
-│       │   ├── judgments/page.tsx      # RAG judgment search
-│       │   ├── evidence/page.tsx       # Evidence vault
-│       │   ├── documents/page.tsx      # Document generation
-│       │   ├── diary/page.tsx          # Case diary
-│       │   ├── cyber/page.tsx          # Cyber detection
-│       │   ├── analytics/page.tsx      # Analytics
-│       │   ├── admin/page.tsx          # Admin panel
-│       │   └── login/page.tsx          # Login
+│       ├── app/                    # dashboard, cases, fir, legal, judgments, evidence, documents, diary, cyber, analytics, admin, login
 │       ├── components/
-│       │   ├── layout/                 # AppShell, Sidebar, Topbar
-│       │   ├── ui/                     # Reusable UI components
-│       │   └── providers/              # React Query provider
-│       ├── lib/
-│       │   ├── api.ts                  # Axios API client
-│       │   ├── store.ts                # Zustand auth store
-│       │   └── utils.ts                # Helpers
-│       └── types/index.ts              # TypeScript types
+│       ├── lib/                    # api.ts, store.ts, utils.ts
+│       └── types/
 ├── scripts/
-│   ├── init_db.sql                     # DB init + seed data
-│   └── seed_chroma.py                  # Vector DB seeder
-├── data/
-│   └── mock_dataset.json               # Demo data
-├── docker/
-│   └── nginx/nginx.conf                # Nginx config
-├── docs/
-│   └── architecture.svg                # Architecture diagram
-├── docker-compose.yml                  # Full stack compose
-└── README.md                           # This file
+│   ├── init_db.sql                 # DB init + initial accounts
+│   └── ingest_legal_corpus.py      # Real judgments ingestion — never inserts sample data
+├── docker/nginx/
+├── docker-compose.yml
+└── README.md
 ```
-
----
-
-## Team & Credits
-
-Built for **KANAD S.H.I.E.L.D. 2026** — National Cybersecurity & Law Enforcement Hackathon
-
-**Problem Statement:** CrimeGPT-X – AI-Powered Automation for Crime Documentation and Legal Intelligence
-
-**Demo Target:** Ahmedabad Cyber Crime Branch, Gujarat Police
 
 ---
 
 ## License
 
-Proprietary — Built for KANAD SHIELD 2026 Hackathon
+Proprietary.
