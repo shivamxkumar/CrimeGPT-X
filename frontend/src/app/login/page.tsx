@@ -6,9 +6,15 @@ import { Spinner } from '@/components/ui'
 import { Logo } from '@/components/ui/Logo'
 import toast from 'react-hot-toast'
 
+// Demo account seeded for the hackathon (DEMO-001, is_demo=true data only).
+// Credentials come from env vars (set in Vercel), never committed to source.
+const DEMO_BADGE = process.env.NEXT_PUBLIC_DEMO_BADGE
+const DEMO_PASSWORD = process.env.NEXT_PUBLIC_DEMO_PASSWORD
+
 export default function LoginPage() {
   const [badge, setBadge] = useState('')
   const [password, setPassword] = useState('')
+  const [demoLoading, setDemoLoading] = useState(false)
   const { login, isLoading } = useAuthStore()
   const router = useRouter()
 
@@ -20,6 +26,20 @@ export default function LoginPage() {
       router.push('/dashboard')
     } catch {
       toast.error('Invalid credentials')
+    }
+  }
+
+  async function handleViewDemo() {
+    if (!DEMO_BADGE || !DEMO_PASSWORD) return
+    setDemoLoading(true)
+    try {
+      await login(DEMO_BADGE, DEMO_PASSWORD)
+      toast.success('Viewing demo environment')
+      router.push('/dashboard')
+    } catch {
+      toast.error('Demo login failed — please try again')
+    } finally {
+      setDemoLoading(false)
     }
   }
 
@@ -89,6 +109,28 @@ export default function LoginPage() {
           <div className="mt-4 p-3 rounded-lg bg-bg-card2 border border-white/[0.05] text-center">
             <div className="text-[11px] text-text-muted">Need access? Contact your system administrator for credentials.</div>
           </div>
+
+          {DEMO_BADGE && DEMO_PASSWORD && (
+            <>
+              <div className="mt-4 flex items-center gap-3 text-[10px] text-text-muted uppercase tracking-widest">
+                <div className="flex-1 h-px bg-white/10" />
+                or
+                <div className="flex-1 h-px bg-white/10" />
+              </div>
+
+              <button
+                type="button"
+                onClick={handleViewDemo}
+                disabled={demoLoading || isLoading}
+                className="btn-secondary w-full justify-center py-3 text-sm mt-4"
+              >
+                {demoLoading ? <Spinner size="sm" /> : '👁️'} View Demo
+              </button>
+              <div className="mt-2 text-center text-[10px] text-text-muted">
+                Explore a pre-loaded demo environment with sample cases, evidence, and AI analysis
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
