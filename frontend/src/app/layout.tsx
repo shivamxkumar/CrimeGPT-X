@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Inter, JetBrains_Mono } from 'next/font/google'
 import { Toaster } from 'react-hot-toast'
 import QueryProvider from '@/components/providers/QueryProvider'
@@ -11,6 +11,11 @@ export const metadata: Metadata = {
   title: 'CrimeGPT-X — AI Police Investigation Platform',
   description: 'From FIR to Arrest – One Intelligent Investigation Platform. Gujarat Police Cyber Crime Branch.',
   keywords: ['police', 'cyber crime', 'AI', 'FIR', 'legal intelligence', 'Gujarat Police'],
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
