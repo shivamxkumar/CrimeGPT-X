@@ -40,7 +40,7 @@ export default function DashboardPage() {
       </PageHeader>
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <StatCard label="Active Cases" value={stats?.active ?? '—'} color="#1a6cf6" />
         <StatCard label="Pending Review" value={stats?.pending_review ?? '—'} color="#ffa726" />
         <StatCard label="Closed Cases" value={stats?.closed ?? '—'} color="#00e676" />
@@ -48,7 +48,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Main content grid */}
-      <div className="grid grid-cols-2 gap-5 mb-5">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
         {/* Recent Cases */}
         <div className="card">
           <div className="flex items-center justify-between mb-4">
@@ -61,6 +61,7 @@ export default function DashboardPage() {
           {cases.length === 0 ? (
             <EmptyState icon="📂" title="No cases yet" description="Register your first case to see it here." action={<Link href="/cases/new" className="btn-primary text-sm">+ New Case</Link>} />
           ) : (
+          <div className="overflow-x-auto">
           <table className="w-full">
             <thead><tr className="tbl-head">
               <th>Case ID</th><th>Type</th><th>Status</th><th>Priority</th>
@@ -78,6 +79,7 @@ export default function DashboardPage() {
               ))}
             </tbody>
           </table>
+          </div>
           )}
         </div>
 
@@ -103,7 +105,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
         <div className="card">
           <div className="font-semibold text-sm mb-3">Cases This Week</div>
           {!weeklyTrend?.length ? (

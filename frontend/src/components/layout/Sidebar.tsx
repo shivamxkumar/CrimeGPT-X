@@ -58,63 +58,85 @@ const navGroups: { label: string | null; items: NavItem[] }[] = [
   },
 ]
 
-export default function Sidebar() {
+interface SidebarProps {
+  open: boolean
+  onClose: () => void
+}
+
+export default function Sidebar({ open, onClose }: SidebarProps) {
   const pathname = usePathname()
   const { user, logout } = useAuthStore()
 
   return (
-    <aside className="w-56 flex flex-col bg-bg-surface border-r border-white/[0.07] h-full flex-shrink-0">
-      <nav className="flex flex-col flex-1 px-2 py-3 gap-0.5 overflow-y-auto">
-        {navGroups.map((group, gi) => (
-          <div key={gi} className="mb-1">
-            {group.label && (
-              <div className="px-2.5 py-1.5 text-[10px] font-semibold text-text-muted uppercase tracking-widest">
-                {group.label}
-              </div>
-            )}
-            {group.items.map((item) => {
-              if (item.roles && !item.roles.includes(user?.role || '')) return null
-              const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
-              const Icon = item.icon
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={cn('nav-link', isActive && 'active')}
-                >
-                  <Icon size={16} className={isActive ? 'text-accent-blue' : 'text-text-muted'} />
-                  <span className="flex-1">{item.label}</span>
-                  {item.badge && (
-                    <span className="bg-accent-red text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
-                      {item.badge}
-                    </span>
-                  )}
-                </Link>
-              )
-            })}
-          </div>
-        ))}
-      </nav>
+    <>
+      {/* Mobile backdrop */}
+      {open && (
+        <div
+          className="fixed inset-0 bg-black/60 z-40 md:hidden"
+          onClick={onClose}
+        />
+      )}
 
-      {/* User + logout at bottom */}
-      <div className="p-3 border-t border-white/[0.07]">
-        <div className="flex items-center gap-2.5 mb-2">
-          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-accent-blue to-accent-cyan flex items-center justify-center text-[11px] font-bold text-white flex-shrink-0">
-            {user?.name?.split(' ').map(w => w[0]).join('').slice(0,2)}
+      <aside
+        className={cn(
+          'w-64 md:w-56 flex flex-col bg-bg-surface border-r border-white/[0.07] flex-shrink-0',
+          'fixed inset-y-0 left-0 z-50 transition-transform duration-200 md:static md:z-auto md:translate-x-0 md:h-full',
+          open ? 'translate-x-0' : '-translate-x-full'
+        )}
+      >
+        <nav className="flex flex-col flex-1 px-2 py-3 gap-0.5 overflow-y-auto">
+          {navGroups.map((group, gi) => (
+            <div key={gi} className="mb-1">
+              {group.label && (
+                <div className="px-2.5 py-1.5 text-[10px] font-semibold text-text-muted uppercase tracking-widest">
+                  {group.label}
+                </div>
+              )}
+              {group.items.map((item) => {
+                if (item.roles && !item.roles.includes(user?.role || '')) return null
+                const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
+                const Icon = item.icon
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={onClose}
+                    className={cn('nav-link', isActive && 'active')}
+                  >
+                    <Icon size={16} className={isActive ? 'text-accent-blue' : 'text-text-muted'} />
+                    <span className="flex-1">{item.label}</span>
+                    {item.badge && (
+                      <span className="bg-accent-red text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                        {item.badge}
+                      </span>
+                    )}
+                  </Link>
+                )
+              })}
+            </div>
+          ))}
+        </nav>
+
+        {/* User + logout at bottom */}
+        <div className="p-3 border-t border-white/[0.07]">
+          <div className="flex items-center gap-2.5 mb-2">
+            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-accent-blue to-accent-cyan flex items-center justify-center text-[11px] font-bold text-white flex-shrink-0">
+              {user?.name?.split(' ').map(w => w[0]).join('').slice(0,2)}
+            </div>
+            <div className="min-w-0">
+              <div className="text-xs font-semibold text-text-primary truncate">{user?.name}</div>
+              <div className="text-[10px] text-text-muted capitalize">{user?.role}</div>
+            </div>
           </div>
-          <div className="min-w-0">
-            <div className="text-xs font-semibold text-text-primary truncate">{user?.name}</div>
-            <div className="text-[10px] text-text-muted capitalize">{user?.role}</div>
-          </div>
+          <button
+            onClick={logout}
+            className="nav-link w-full text-xs text-text-muted hover:text-accent-red"
+          >
+            <LogOut size={14} />
+            Sign Out
+          </button>
         </div>
-        <button
-          onClick={logout}
-          className="nav-link w-full text-xs text-text-muted hover:text-accent-red"
-        >
-          <LogOut size={14} />
-          Sign Out
-        </button>
-      </div>
-    </aside>
+      </aside>
+    </>
   )
 }
