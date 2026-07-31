@@ -6,6 +6,7 @@ from datetime import datetime
 from app.core.database import get_db
 from app.core.auth import hash_password, verify_password, create_access_token, get_current_user
 from app.core.config import settings
+from app.core.rate_limit import limiter
 from app.models.models import User, AuditLog
 from app.schemas.schemas import LoginRequest, LoginResponse, UserCreate, UserOut
 
@@ -13,6 +14,7 @@ router = APIRouter()
 
 
 @router.post("/login", response_model=LoginResponse)
+@limiter.limit("10/minute")
 async def login(payload: LoginRequest, request: Request, db: AsyncSession = Depends(get_db)):
     result = await db.execute(
         select(User).where(User.badge_number == payload.badge_number, User.is_active == True)
@@ -56,7 +58,8 @@ async def login(payload: LoginRequest, request: Request, db: AsyncSession = Depe
 
 
 @router.post("/register", response_model=UserOut, status_code=201)
-async def register(payload: UserCreate, db: AsyncSession = Depends(get_db)):
+@limiter.limit("10/minute")
+async def register(payload: UserCreate, request: Request, db: AsyncSession = Depends(get_db)):
     existing = await db.execute(
         select(User).where(
             (User.badge_number == payload.badge_number) | (User.email == payload.email)

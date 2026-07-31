@@ -1,10 +1,13 @@
 'use client'
 import AppShell from '@/components/layout/AppShell'
-import { PageHeader, Spinner, Alert, EmptyState } from '@/components/ui'
+import { PageHeader, Alert, EmptyState, Button, AIThinking } from '@/components/ui'
 import { useState } from 'react'
+import { motion } from 'framer-motion'
 import { judgmentsAPI } from '@/lib/api'
 import { Judgment } from '@/types'
 import { Search, BookOpen } from 'lucide-react'
+
+const SEARCH_STEPS = ['Embedding your query...', 'Searching the judgments corpus...', 'Ranking by legal relevance...']
 
 export default function JudgmentsPage() {
   const [query, setQuery] = useState('')
@@ -49,21 +52,16 @@ export default function JudgmentsPage() {
               onKeyDown={e => e.key === 'Enter' && search()}
             />
           </div>
-          <button className="btn-primary" onClick={search} disabled={searching || !query.trim()}>
-            {searching ? <><Spinner size="sm" /> Searching...</> : '🔍 Semantic Search'}
-          </button>
+          <Button onClick={search} disabled={searching || !query.trim()} loading={searching}>
+            {searching ? 'Searching...' : <><Search size={14} /> Semantic Search</>}
+          </Button>
         </div>
       </div>
 
       {/* Results */}
       {error && <Alert variant="error" icon="⚠️">{error}</Alert>}
 
-      {searching && (
-        <div className="card flex items-center justify-center py-16 gap-3">
-          <Spinner size="lg" />
-          <div className="text-text-secondary">Running semantic search against the ingested judgments corpus...</div>
-        </div>
-      )}
+      {searching && <AIThinking steps={SEARCH_STEPS} label="Running semantic search" />}
 
       {!searching && results === null && !error && (
         <EmptyState icon="📚" title="Search landmark judgments" description="Enter case facts, section numbers, or a crime pattern to find relevant precedent from the ingested corpus." />
@@ -74,9 +72,9 @@ export default function JudgmentsPage() {
       )}
 
       {!searching && results !== null && results.length > 0 && (
-        <div className="space-y-3">
+        <motion.div initial="hidden" animate="visible" variants={{ visible: { transition: { staggerChildren: 0.06 } } }} className="space-y-3">
           {results.map((j, idx) => (
-            <div key={idx} className="card hover:border-white/15 transition-all" style={{ borderLeft: '3px solid #b57bee' }}>
+            <motion.div key={idx} variants={{ hidden: { opacity: 0, y: 8 }, visible: { opacity: 1, y: 0 } }} className="card hover:border-white/[0.1] transition-all border-l-[3px]" style={{ borderLeftColor: '#8b5cf6' }}>
               <div className="flex items-start justify-between gap-3 mb-2">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -88,9 +86,9 @@ export default function JudgmentsPage() {
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <span className="badge-purple text-[11px]">{Math.round(j.relevance_score * 100)}% Match</span>
-                  <button onClick={() => setExpandedIdx(expandedIdx === idx ? null : idx)} className="btn-secondary text-xs px-2 py-1">
+                  <Button variant="secondary" size="sm" onClick={() => setExpandedIdx(expandedIdx === idx ? null : idx)}>
                     {expandedIdx === idx ? 'Collapse' : 'Expand'}
-                  </button>
+                  </Button>
                 </div>
               </div>
 
@@ -104,9 +102,9 @@ export default function JudgmentsPage() {
                   </div>
                 </div>
               )}
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       )}
     </AppShell>
   )

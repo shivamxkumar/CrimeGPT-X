@@ -42,7 +42,12 @@ def get_gemini() -> genai.Client:
     if not _gemini_client:
         if not settings.GEMINI_API_KEY:
             raise AIServiceError("GEMINI_API_KEY is not configured")
-        _gemini_client = genai.Client(api_key=settings.GEMINI_API_KEY)
+        # Bounded timeout so a slow/unresponsive Gemini API can't hang a
+        # request (and the worker holding it) indefinitely.
+        _gemini_client = genai.Client(
+            api_key=settings.GEMINI_API_KEY,
+            http_options=genai_types.HttpOptions(timeout=90_000),
+        )
     return _gemini_client
 
 

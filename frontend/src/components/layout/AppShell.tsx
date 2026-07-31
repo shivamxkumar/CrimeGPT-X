@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import Sidebar from './Sidebar'
 import Topbar from './Topbar'
 import { useAuthStore } from '@/lib/store'
+import { PageTransition } from '@/components/ui/motion'
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const { user } = useAuthStore()
@@ -16,6 +17,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   // initial render — that render also runs server-side at build time
   // (Next.js prerendering), where it doesn't exist at all.
   const [hydrated, setHydrated] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   useEffect(() => {
     if (useAuthStore.persist.hasHydrated()) {
@@ -27,18 +29,20 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (hydrated && !user) router.replace('/login')
-  }, [hydrated, user])
+  }, [hydrated, user, router])
 
   if (!hydrated) return null
   if (!user) return null
 
   return (
     <div className="flex flex-col h-screen overflow-hidden">
-      <Topbar />
+      <Topbar onMenuClick={() => setSidebarOpen(true)} />
       <div className="flex flex-1 overflow-hidden">
-        <Sidebar />
-        <main className="flex-1 overflow-y-auto cyber-bg p-6">
-          <div className="relative z-10">{children}</div>
+        <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+        <main className="flex-1 overflow-y-auto overflow-x-hidden app-bg p-4 md:p-6">
+          <div className="relative z-10">
+            <PageTransition>{children}</PageTransition>
+          </div>
         </main>
       </div>
     </div>

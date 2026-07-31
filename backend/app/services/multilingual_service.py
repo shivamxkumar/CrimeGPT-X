@@ -3,6 +3,7 @@ CrimeGPT-X — Multilingual Service
 Handles translation between English, Hindi, Gujarati
 Uses deep_translator for document translation
 """
+import asyncio
 import logging
 from typing import Optional
 from functools import lru_cache
@@ -68,10 +69,16 @@ class MultilingualService:
 
         try:
             lang_map = {"hi": "hi", "gu": "gu", "en": "en"}
-            translated = Translator(
-                source=lang_map.get(source_lang, "en"),
-                target=lang_map.get(target_lang, "en"),
-            ).translate(text)
+
+            def _translate():
+                return Translator(
+                    source=lang_map.get(source_lang, "en"),
+                    target=lang_map.get(target_lang, "en"),
+                ).translate(text)
+
+            # GoogleTranslator makes a real (blocking) HTTP call — keep it
+            # off the event loop like every other network/CPU-bound service call.
+            translated = await asyncio.to_thread(_translate)
             return translated or text
         except Exception as e:
             logger.warning(f"Translation failed: {e}")

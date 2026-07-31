@@ -1,36 +1,37 @@
 'use client'
-import { Bell, Search } from 'lucide-react'
+import { Bell, Search, Menu, ChevronDown, LogOut, Settings, User as UserIcon } from 'lucide-react'
 import { useAuthStore } from '@/lib/store'
 import { useState } from 'react'
-import { Logo } from '@/components/ui/Logo'
+import Link from 'next/link'
+import { Breadcrumb } from '@/components/ui/Breadcrumb'
+import { Avatar } from '@/components/ui/Avatar'
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuLabel } from '@/components/ui/Menu'
 
-export default function Topbar() {
-  const { user } = useAuthStore()
+interface TopbarProps {
+  onMenuClick: () => void
+}
+
+export default function Topbar({ onMenuClick }: TopbarProps) {
+  const { user, logout } = useAuthStore()
   const [notifOpen, setNotifOpen] = useState(false)
 
-  const initials = user?.name?.split(' ').map(w => w[0]).join('').slice(0, 2) || 'U'
-
   return (
-    <header className="h-13 flex-shrink-0 flex items-center px-5 gap-4 bg-bg-surface border-b border-white/[0.07] cyber-edge z-50">
-      {/* Logo */}
-      <div className="flex items-center gap-2.5 glitch-hover">
-        <Logo size={30} />
-        <div>
-          <div className="text-sm font-bold tracking-tight leading-tight neon-text">CrimeGPT-X</div>
-          <div className="text-[9px] text-text-muted tracking-widest uppercase">Police Intelligence Platform</div>
-        </div>
-      </div>
+    <header className="h-16 flex-shrink-0 flex items-center px-3 md:px-5 gap-3 md:gap-4 glass border-b border-white/[0.06] z-30">
+      {/* Mobile menu toggle */}
+      <button
+        className="md:hidden w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/[0.06] text-text-secondary flex-shrink-0"
+        onClick={onMenuClick}
+        aria-label="Open menu"
+      >
+        <Menu size={20} />
+      </button>
+
+      <Breadcrumb />
 
       <div className="flex-1" />
 
-      {/* Live badge */}
-      <span className="badge-green text-[10px] gap-1 flex items-center">
-        <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-        LIVE
-      </span>
-
       {/* Search */}
-      <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-bg-card border border-white/[0.07] text-text-muted text-xs hover:text-text-primary transition-all">
+      <button className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-bg-card border border-white/[0.06] text-text-muted text-xs hover:border-white/[0.14] transition-all">
         <Search size={13} />
         <span>Search cases...</span>
         <span className="ml-2 font-mono text-[10px] opacity-50">⌘K</span>
@@ -39,22 +40,23 @@ export default function Topbar() {
       {/* Notifications */}
       <div className="relative">
         <button
-          className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-bg-hover text-text-secondary transition-all relative"
+          className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-white/[0.06] text-text-secondary transition-all relative"
           onClick={() => setNotifOpen(!notifOpen)}
+          aria-label="Notifications"
         >
-          <Bell size={16} />
-          <span className="absolute top-1 right-1 w-2 h-2 bg-accent-red rounded-full border-2 border-bg-surface" />
+          <Bell size={17} />
+          <span className="absolute top-2 right-2 w-2 h-2 bg-accent-red rounded-full border-2 border-bg-surface" />
         </button>
 
         {notifOpen && (
-          <div className="absolute right-0 top-10 w-80 bg-bg-surface border border-white/[0.07] rounded-xl shadow-2xl z-50 overflow-hidden">
-            <div className="p-3 border-b border-white/[0.07] font-semibold text-sm">Notifications</div>
+          <div className="absolute right-0 top-11 w-[min(20rem,calc(100vw-1.5rem))] glass rounded-xl2 shadow-soft z-50 overflow-hidden animate-scale-in">
+            <div className="p-3 border-b border-white/[0.06] font-semibold text-sm">Notifications</div>
             {[
               { icon: '⏰', title: 'Remand deadline — CC/2024/0839', body: 'Court submission due in 48 hours', time: '2h ago', color: 'text-amber-400' },
               { icon: '✅', title: 'Chargesheet ready — CC/2024/0847', body: 'AI generated, pending review', time: '3h ago', color: 'text-green-400' },
               { icon: '📁', title: 'New case assigned — CC/2024/0848', body: 'Social media sextortion case', time: 'Yesterday', color: 'text-blue-400' },
             ].map((n, i) => (
-              <div key={i} className="flex gap-3 p-3 hover:bg-bg-hover cursor-pointer transition-colors border-b border-white/[0.04] last:border-0">
+              <div key={i} className="flex gap-3 p-3 hover:bg-white/[0.04] cursor-pointer transition-colors border-b border-white/[0.04] last:border-0">
                 <div className={`text-lg ${n.color}`}>{n.icon}</div>
                 <div className="min-w-0">
                   <div className="text-xs font-semibold text-text-primary truncate">{n.title}</div>
@@ -67,16 +69,33 @@ export default function Topbar() {
         )}
       </div>
 
-      {/* User */}
-      <div className="flex items-center gap-2">
-        <div className="text-right">
-          <div className="text-xs font-semibold text-text-primary leading-tight">{user?.name}</div>
-          <div className="text-[10px] text-text-muted capitalize">{user?.role?.toUpperCase()}</div>
-        </div>
-        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-accent-blue to-accent-cyan flex items-center justify-center text-xs font-bold text-white">
-          {initials}
-        </div>
-      </div>
+      {/* User menu */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button className="flex items-center gap-2 flex-shrink-0 pl-1 pr-2 py-1 rounded-xl hover:bg-white/[0.06] transition-all">
+            <Avatar name={user?.name} size="sm" />
+            <div className="text-right hidden sm:block">
+              <div className="text-xs font-semibold text-text-primary leading-tight">{user?.name}</div>
+              <div className="text-[10px] text-text-muted capitalize">{user?.role?.toUpperCase()}</div>
+            </div>
+            <ChevronDown size={13} className="hidden sm:block text-text-muted" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent>
+          <DropdownMenuLabel>Signed in as {user?.name}</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem asChild>
+            <Link href="/settings"><UserIcon size={14} /> Profile</Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link href="/settings"><Settings size={14} /> Settings</Link>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={logout} className="text-red-400 data-[highlighted]:text-red-300">
+            <LogOut size={14} /> Sign Out
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </header>
   )
 }

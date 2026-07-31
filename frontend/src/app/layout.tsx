@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Inter, JetBrains_Mono } from 'next/font/google'
 import { Toaster } from 'react-hot-toast'
 import QueryProvider from '@/components/providers/QueryProvider'
@@ -13,6 +13,11 @@ export const metadata: Metadata = {
   keywords: ['police', 'cyber crime', 'AI', 'FIR', 'legal intelligence', 'Gujarat Police'],
 }
 
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+}
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className="dark">
@@ -23,13 +28,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             position="top-right"
             toastOptions={{
               style: {
-                background: '#111f33',
-                color: '#e8f0fe',
-                border: '1px solid rgba(255,255,255,0.07)',
+                background: '#161d2c',
+                color: '#f3f4f6',
+                border: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: '12px',
                 fontSize: '13px',
               },
-              success: { iconTheme: { primary: '#00e676', secondary: '#111f33' } },
-              error:   { iconTheme: { primary: '#ff5252', secondary: '#111f33' } },
+              success: { iconTheme: { primary: '#22c55e', secondary: '#161d2c' } },
+              error:   { iconTheme: { primary: '#ef4444', secondary: '#161d2c' } },
             }}
           />
         </QueryProvider>

@@ -2,6 +2,7 @@
 Evidence Management Service
 Handles upload to MinIO, SHA-256 hashing, and chain of custody tracking
 """
+import asyncio
 import hashlib
 import logging
 import uuid
@@ -103,47 +104,54 @@ class EvidenceService:
         data: bytes,
         content_type: str,
     ) -> str:
-        minio = self._get_minio()
+        minio = await asyncio.to_thread(self._get_minio)
         if not minio:
             raise EvidenceStorageError("Evidence object storage (MinIO/S3) is not configured or unreachable")
 
-        try:
+        def _put():
             minio.put_object(
                 bucket, object_name, BytesIO(data), len(data),
                 content_type=content_type
             )
+
+        try:
+            await asyncio.to_thread(_put)
             return f"{bucket}/{object_name}"
         except Exception as e:
             logger.error(f"MinIO upload failed: {e}")
             raise EvidenceStorageError(f"Evidence upload failed: {e}") from e
 
-    def download_object(self, file_path: str) -> bytes:
+    async def download_object(self, file_path: str) -> bytes:
         """Fetch the real evidence bytes from storage. MinIO runs on a private
         network with no public endpoint, so the backend proxies the download
         rather than issuing a presigned URL the client couldn't reach."""
-        minio = self._get_minio()
+        minio = await asyncio.to_thread(self._get_minio)
         if not minio:
             raise EvidenceStorageError("Evidence object storage (MinIO/S3) is not configured or unreachable")
         bucket, obj = file_path.split("/", 1)
-        try:
+
+        def _get():
             response = minio.get_object(bucket, obj)
             try:
                 return response.read()
             finally:
                 response.close()
                 response.release_conn()
+
+        try:
+            return await asyncio.to_thread(_get)
         except Exception as e:
             logger.error(f"MinIO download failed: {e}")
             raise EvidenceStorageError(f"Evidence download failed: {e}") from e
 
-    def delete_object(self, file_path: str) -> None:
+    async def delete_object(self, file_path: str) -> None:
         """Permanently remove an evidence object from storage."""
-        minio = self._get_minio()
+        minio = await asyncio.to_thread(self._get_minio)
         if not minio:
             raise EvidenceStorageError("Evidence object storage (MinIO/S3) is not configured or unreachable")
         bucket, obj = file_path.split("/", 1)
         try:
-            minio.remove_object(bucket, obj)
+            await asyncio.to_thread(minio.remove_object, bucket, obj)
         except Exception as e:
             logger.error(f"MinIO delete failed: {e}")
             raise EvidenceStorageError(f"Evidence deletion failed: {e}") from e

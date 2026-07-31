@@ -1,4 +1,4 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import List
 import secrets
 
@@ -15,6 +15,10 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql+asyncpg://crimegpt:crimegpt_pass@db:5432/crimegpt_db"
     DATABASE_POOL_SIZE: int = 10
     DATABASE_MAX_OVERFLOW: int = 20
+    # Seeds demo users + perf indexes/view on startup if the users table is
+    # empty. Safe to leave on — it's a no-op once real users exist. Set to
+    # false to disable entirely (e.g. a hardened production deployment).
+    SEED_DEMO_DATA: bool = True
 
     # Redis
     REDIS_URL: str = "redis://redis:6379/0"
@@ -53,6 +57,11 @@ class Settings(BaseSettings):
         "https://crimegpt.gujaratpolice.gov.in",
     ]
 
+    # Trusted Host header validation (prevents Host header injection).
+    # "*" is permissive (matches prior no-op behavior); tighten in production
+    # by setting this to the real backend domain(s).
+    ALLOWED_HOSTS: List[str] = ["*"]
+
     # File Upload
     MAX_UPLOAD_SIZE_MB: int = 50
     ALLOWED_FILE_TYPES: List[str] = [
@@ -69,8 +78,6 @@ class Settings(BaseSettings):
     SMTP_USER: str = ""
     SMTP_PASSWORD: str = ""
 
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
+    model_config = SettingsConfigDict(env_file=".env", case_sensitive=True, extra="ignore")
 
 settings = Settings()

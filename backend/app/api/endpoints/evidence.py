@@ -7,8 +7,9 @@ from fastapi import APIRouter, UploadFile, File, Form, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from app.core.config import settings
 from app.core.database import get_db
-from app.core.auth import get_current_user
+from app.core.auth import get_current_user, require_role
 from app.models.models import User, Case, Evidence, EvidenceType, EvidenceCategory, DiaryEntry, DiaryEntryType, AuditLog
 from app.schemas.schemas import EvidenceOut
 from app.services.evidence_service import evidence_service, EvidenceStorageError
@@ -79,9 +80,13 @@ async def upload_evidence(
     case = case_result.scalar_one_or_none()
     if not case: raise HTTPException(status_code=404, detail="Case not found")
 
+    if file.content_type not in settings.ALLOWED_FILE_TYPES:
+        raise HTTPException(status_code=415, detail=f"Unsupported file type: {file.content_type}")
+
     file_data = await file.read()
-    if len(file_data) > 50 * 1024 * 1024:
-        raise HTTPException(status_code=413, detail="File too large")
+    max_bytes = settings.MAX_UPLOAD_SIZE_MB * 1024 * 1024
+    if len(file_data) > max_bytes:
+        raise HTTPException(status_code=413, detail=f"File exceeds {settings.MAX_UPLOAD_SIZE_MB}MB limit")
 
     try:
         storage_meta = await evidence_service.upload_evidence(
@@ -144,7 +149,7 @@ async def download_evidence(
         raise HTTPException(status_code=404, detail="Evidence not found")
 
     try:
-        data = evidence_service.download_object(ev.file_path)
+        data = await evidence_service.download_object(ev.file_path)
     except EvidenceStorageError as e:
         raise HTTPException(status_code=503, detail=f"Evidence download failed: {e}")
 
@@ -159,7 +164,7 @@ async def download_evidence(
 async def delete_evidence(
     evidence_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_role("admin", "sho")),
 ):
     """Permanently delete an evidence item and record the deletion in the
     immutable audit trail and case diary — the deletion itself becomes part
@@ -173,7 +178,7 @@ async def delete_evidence(
     case = case_result.scalar_one_or_none()
 
     try:
-        evidence_service.delete_object(ev.file_path)
+        await evidence_service.delete_object(ev.file_path)
     except EvidenceStorageError as e:
         raise HTTPException(status_code=503, detail=f"Evidence deletion failed: {e}")
 
