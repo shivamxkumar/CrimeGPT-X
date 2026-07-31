@@ -1,6 +1,8 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useQuery } from '@tanstack/react-query'
+import { casesAPI } from '@/lib/api'
 import { useAuthStore } from '@/lib/store'
 import {
   LayoutDashboard, FolderOpen, FilePlus, FileText,
@@ -32,7 +34,7 @@ const navGroups: { label: string | null; items: NavItem[] }[] = [
   {
     label: 'Investigation',
     items: [
-      { href: '/cases',     icon: FolderOpen, label: 'All Cases',  badge: '7' },
+      { href: '/cases',     icon: FolderOpen, label: 'All Cases' },
       { href: '/cases/new', icon: FilePlus,   label: 'New Case' },
       { href: '/fir',       icon: FileText,   label: 'FIR Upload & OCR' },
     ],
@@ -71,6 +73,12 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
   const pathname = usePathname()
   const { user, logout } = useAuthStore()
   const [collapsed, setCollapsed] = useState(false)
+  const { data: caseStats } = useQuery({
+    queryKey: ['case-stats'],
+    queryFn: () => casesAPI.stats().then(r => r.data),
+    staleTime: 30_000,
+  })
+  const badges: Record<string, string> = caseStats?.total ? { '/cases': String(caseStats.total) } : {}
 
   useEffect(() => {
     const stored = localStorage.getItem('crimegpt-sidebar-collapsed')
@@ -88,6 +96,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
     if (item.roles && !item.roles.includes(user?.role || '')) return null
     const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
     const Icon = item.icon
+    const badge = item.badge || badges[item.href]
     const link = (
       <Link
         key={item.href}
@@ -97,9 +106,9 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
       >
         <Icon size={16} className={isActive ? 'text-accent-blue' : 'text-text-muted'} />
         {!collapsed && <span className="flex-1 truncate">{item.label}</span>}
-        {!collapsed && item.badge && (
+        {!collapsed && badge && (
           <span className="bg-accent-red text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
-            {item.badge}
+            {badge}
           </span>
         )}
       </Link>

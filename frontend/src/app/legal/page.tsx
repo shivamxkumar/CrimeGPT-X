@@ -39,6 +39,8 @@ export default function LegalAIPage() {
       }])
       setAnalysis(null)
     }
+    // Only re-run when switching to a different case, not on every refetch of selectedCase.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCase?.case_id])
 
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])

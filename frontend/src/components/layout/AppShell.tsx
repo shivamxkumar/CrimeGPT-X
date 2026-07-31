@@ -29,7 +29,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (hydrated && !user) router.replace('/login')
-  }, [hydrated, user])
+  }, [hydrated, user, router])
 
   if (!hydrated) return null
   if (!user) return null

@@ -10,7 +10,13 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sess
 from app.main import app
 from app.core.database import Base, get_db
 from app.core.auth import hash_password
+from app.core.rate_limit import limiter
 from app.models.models import User, UserRole
+
+# These are functional tests, not rate-limit tests — every fixture-driven
+# login would otherwise share one bucket and start 429ing after a handful
+# of tests.
+limiter.enabled = False
 
 # ── Test DB (SQLite in-memory) ────────────────────────────────
 TEST_DB_URL = "sqlite+aiosqlite:///:memory:"

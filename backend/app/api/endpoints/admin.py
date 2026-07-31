@@ -1,4 +1,5 @@
 """Admin Panel Endpoint"""
+import asyncio
 from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import text as sqltext
@@ -37,10 +38,10 @@ async def system_status(
 
     async def _check_minio():
         from app.services.evidence_service import evidence_service
-        minio = evidence_service._get_minio()
+        minio = await asyncio.to_thread(evidence_service._get_minio)
         if not minio:
             raise RuntimeError("MinIO not configured")
-        minio.list_buckets()
+        await asyncio.to_thread(minio.list_buckets)
 
     async def _check_chroma():
         from app.services.ai_service import get_chroma

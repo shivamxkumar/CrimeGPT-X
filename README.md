@@ -174,9 +174,11 @@ docker compose exec backend python scripts/ingest_legal_corpus.py
 | pgAdmin (dev profile) | http://localhost:5050 |
 | Flower (Celery) | http://localhost:5555 |
 
-Initial accounts are seeded by `scripts/init_db.sql` (badge number / password
-`demo1234` for each role) — rotate these passwords before any real
-deployment.
+Initial accounts are seeded automatically on backend startup by
+`app/core/seed.py` (badge number / password `demo1234` for each role) —
+it only runs when the `users` table is empty, so it's a no-op once real
+accounts exist. Set `SEED_DEMO_DATA=false` to disable it outright. Rotate
+these passwords (or disable seeding) before any real deployment.
 
 ### 3. Backend outside Docker
 

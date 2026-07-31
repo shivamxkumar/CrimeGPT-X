@@ -3,6 +3,7 @@ Document Generation Endpoint
 Renders legal documents via Jinja2 templates (fast path) with Gemini as the
 fallback for doc types without a template. Supports on-demand PDF/DOCX export.
 """
+import asyncio
 import io
 import time
 
@@ -195,7 +196,9 @@ async def export_document_pdf(
         raise HTTPException(status_code=422, detail="Document has no content to export")
 
     try:
-        pdf_bytes = render_pdf(doc.content_html)
+        # WeasyPrint's HTML->PDF layout/render is CPU-heavy and synchronous —
+        # run it off the event loop so it doesn't stall every other request.
+        pdf_bytes = await asyncio.to_thread(render_pdf, doc.content_html)
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"PDF export failed: {e}")
 
@@ -222,7 +225,7 @@ async def export_document_docx(
         raise HTTPException(status_code=422, detail="Document has no content to export")
 
     try:
-        docx_bytes = render_docx(doc.title, doc.content_html)
+        docx_bytes = await asyncio.to_thread(render_docx, doc.title, doc.content_html)
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"DOCX export failed: {e}")
 

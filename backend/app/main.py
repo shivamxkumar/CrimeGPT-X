@@ -6,11 +6,15 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 import time
 import logging
 
 from app.core.config import settings
-from app.core.database import engine, Base
+from app.core.database import engine, Base, AsyncSessionLocal
+from app.core.rate_limit import limiter
+from app.core.seed import run_bootstrap
 from app.api.v1 import router as api_router
 
 logging.basicConfig(level=logging.INFO)
@@ -24,6 +28,8 @@ app = FastAPI(
     redoc_url="/api/redoc",
     openapi_url="/api/openapi.json",
 )
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # ── Middleware ──────────────────────────────────────────────
 app.add_middleware(
@@ -33,6 +39,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.ALLOWED_HOSTS)
 
 @app.middleware("http")
 async def add_process_time(request: Request, call_next):
@@ -60,6 +67,9 @@ app.include_router(api_router, prefix="/api/v1")
 async def startup():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+    if settings.SEED_DEMO_DATA:
+        async with AsyncSessionLocal() as db:
+            await run_bootstrap(db)
     logger.info("CrimeGPT-X API started successfully")
 
 @app.get("/health")

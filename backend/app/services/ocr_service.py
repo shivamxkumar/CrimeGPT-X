@@ -3,6 +3,7 @@ OCR Service — FIR Document Processing
 Multi-language OCR using EasyOCR (primary) and Tesseract (fallback)
 Extracts structured fields from FIR documents
 """
+import asyncio
 import re
 import logging
 from typing import Dict, Any, Optional, List
@@ -102,11 +103,14 @@ class OCRService:
         """Convert PDF to images then OCR each page"""
         try:
             from pdf2image import convert_from_path
-            images = convert_from_path(file_path, dpi=300)
+            # convert_from_path and OCR are both CPU/IO-heavy blocking calls —
+            # run off the event loop so one OCR job doesn't freeze every other
+            # concurrent request on this worker.
+            images = await asyncio.to_thread(convert_from_path, file_path, dpi=300)
             all_text = []
             for img in images:
                 with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
-                    img.save(tmp.name, "PNG")
+                    await asyncio.to_thread(img.save, tmp.name, "PNG")
                     text, _ = await self._process_image(tmp.name)
                     all_text.append(text)
                     Path(tmp.name).unlink(missing_ok=True)
@@ -116,9 +120,9 @@ class OCRService:
 
     async def _process_image(self, file_path: str):
         """OCR a single image file"""
-        reader = self._get_reader()
+        reader = await asyncio.to_thread(self._get_reader)
         if reader:
-            results = reader.readtext(file_path, detail=1, paragraph=True)
+            results = await asyncio.to_thread(reader.readtext, file_path, detail=1, paragraph=True)
             text = "\n".join([r[1] for r in results if r[2] > 0.3])
             return text, 1
         else:
@@ -128,10 +132,11 @@ class OCRService:
         try:
             import pytesseract
             from PIL import Image
-            text = pytesseract.image_to_string(
+            text = await asyncio.to_thread(
+                pytesseract.image_to_string,
                 Image.open(file_path),
                 lang="eng+hin+guj",
-                config="--psm 6"
+                config="--psm 6",
             )
             return text, 1
         except Exception as e:

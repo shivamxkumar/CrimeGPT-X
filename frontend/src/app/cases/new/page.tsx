@@ -186,7 +186,7 @@ export default function NewCasePage() {
             <AlertTriangle size={16} className="text-accent-red" /> Accused Information
           </div>
           <Alert variant="warning" icon="⚠️">
-            If accused identity is not yet known, keep default "Unknown". This can be updated as investigation progresses.
+            If accused identity is not yet known, keep default &quot;Unknown&quot;. This can be updated as investigation progresses.
           </Alert>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3">
             <div>

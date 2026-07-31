@@ -1,5 +1,5 @@
 'use client'
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { CaseListItem } from '@/types'
 import { useQuery } from '@tanstack/react-query'
 import { casesAPI } from '@/lib/api'
@@ -17,7 +17,7 @@ export function useSelectedCase() {
     queryFn: () => casesAPI.list({ limit: 200 }).then(r => r.data),
     staleTime: 30_000,
   })
-  const cases: CaseListItem[] = data?.items || []
+  const cases: CaseListItem[] = useMemo(() => data?.items || [], [data])
 
   useEffect(() => {
     if (!selectedCaseId && cases.length > 0) {

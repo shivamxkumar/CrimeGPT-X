@@ -8,7 +8,7 @@ export default function RootPage() {
   const { user } = useAuthStore()
   useEffect(() => {
     router.replace(user ? '/dashboard' : '/login')
-  }, [user])
+  }, [user, router])
   return (
     <div className="min-h-screen bg-bg-base flex items-center justify-center">
       <div className="flex flex-col items-center gap-4">

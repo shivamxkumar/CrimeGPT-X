@@ -93,7 +93,7 @@ export default function CaseDetailPage() {
           ) : (
             <div className="card">
               <div className="font-semibold text-sm mb-2">⚖️ AI Legal Sections</div>
-              <div className="text-sm text-text-secondary mb-3">This case hasn't been analyzed yet.</div>
+              <div className="text-sm text-text-secondary mb-3">This case hasn&apos;t been analyzed yet.</div>
               <Link href="/legal"><Button size="sm">🤖 Run AI Legal Analysis</Button></Link>
             </div>
           )}

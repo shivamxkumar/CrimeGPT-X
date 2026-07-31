@@ -106,7 +106,7 @@ export default function EvidencePage() {
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop, multiple: false, disabled: !selectedCaseId })
 
-  const list: Evidence[] = evidence || []
+  const list: Evidence[] = useMemo(() => evidence || [], [evidence])
   const filtered = useMemo(() => list.filter(ev => {
     if (categoryFilter !== 'all' && ev.category !== categoryFilter) return false
     if (statusFilter === 'verified' && !ev.is_verified) return false
