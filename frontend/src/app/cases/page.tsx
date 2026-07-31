@@ -1,6 +1,6 @@
 'use client'
 import AppShell from '@/components/layout/AppShell'
-import { PageHeader, StatusBadge, PriorityBadge, EmptyState, Spinner, Alert } from '@/components/ui'
+import { PageHeader, StatusBadge, PriorityBadge, EmptyState, Alert, Button, Skeleton } from '@/components/ui'
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { casesAPI } from '@/lib/api'
@@ -36,7 +36,7 @@ export default function CasesPage() {
   return (
     <AppShell>
       <PageHeader title="Case Registry" subtitle="All investigations — Ahmedabad Cyber Crime Branch">
-        <Link href="/cases/new" className="btn-primary text-sm"><Plus size={14}/>Register New Case</Link>
+        <Link href="/cases/new"><Button size="sm"><Plus size={14}/>Register New Case</Button></Link>
       </PageHeader>
 
       {/* Filters */}
@@ -58,9 +58,9 @@ export default function CasesPage() {
             <option value="">All Priority</option>
             {PRIORITY_OPTIONS.slice(1).map(p => <option key={p} value={p}>{p}</option>)}
           </select>
-          <button className="btn-secondary text-sm" onClick={() => { setQ(''); setStatus(''); setCategory(''); setPriority('') }}>
+          <Button variant="secondary" size="sm" onClick={() => { setQ(''); setStatus(''); setCategory(''); setPriority('') }}>
             Clear
-          </button>
+          </Button>
         </div>
         <div className="mt-2 text-xs text-text-muted">{filtered.length} case{filtered.length !== 1 ? 's' : ''} found</div>
       </div>
@@ -68,11 +68,11 @@ export default function CasesPage() {
       {/* Table */}
       <div className="card overflow-hidden">
         {isLoading ? (
-          <div className="flex justify-center py-16"><Spinner size="lg"/></div>
+          <div className="p-4 space-y-3">{[0,1,2,3,4].map(i => <Skeleton key={i} className="h-10 w-full" />)}</div>
         ) : isError ? (
           <Alert variant="error" icon="⚠️">Failed to load cases — check the backend connection.</Alert>
         ) : filtered.length === 0 ? (
-          <EmptyState icon="🔍" title="No cases found" description="Try adjusting your search filters" action={<Link href="/cases/new" className="btn-primary text-sm">Register New Case</Link>}/>
+          <EmptyState icon="🔍" title="No cases found" description="Try adjusting your search filters" action={<Link href="/cases/new"><Button size="sm">Register New Case</Button></Link>}/>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -83,7 +83,7 @@ export default function CasesPage() {
               <tbody>
                 {filtered.map(c => (
                   <tr key={c.id} className="tbl-row" onClick={() => window.location.href = caseHref(c.case_id)}>
-                    <td><span className="font-mono text-xs text-accent-cyan">{c.case_id}</span></td>
+                    <td><span className="font-mono text-xs text-accent-blue">{c.case_id}</span></td>
                     <td className="text-xs text-text-secondary">{c.fir_number || '—'}</td>
                     <td className="text-xs">{CRIME_CATEGORY_LABELS[c.crime_category]}</td>
                     <td className="text-sm font-medium">{c.victim_name}</td>
@@ -93,7 +93,7 @@ export default function CasesPage() {
                     <td><StatusBadge status={c.status}/></td>
                     <td><PriorityBadge priority={c.priority}/></td>
                     <td onClick={e => e.stopPropagation()}>
-                      <Link href={caseHref(c.case_id)} className="btn-secondary text-xs px-3 py-1.5">Open</Link>
+                      <Link href={caseHref(c.case_id)}><Button variant="secondary" size="sm">Open</Button></Link>
                     </td>
                   </tr>
                 ))}

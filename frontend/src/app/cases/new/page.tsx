@@ -1,12 +1,12 @@
 'use client'
 import AppShell from '@/components/layout/AppShell'
-import { PageHeader, Alert } from '@/components/ui'
+import { PageHeader, Alert, Button } from '@/components/ui'
 import { useState } from 'react'
 import { casesAPI } from '@/lib/api'
 import { CRIME_CATEGORY_LABELS } from '@/types'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
-import { ChevronRight, User, AlertTriangle, FileText, Users } from 'lucide-react'
+import { ChevronRight, User, AlertTriangle, FileText } from 'lucide-react'
 
 const STEP_LABELS = ['Case Info', 'Victim', 'Accused', 'Incident', 'Review']
 
@@ -106,7 +106,7 @@ export default function NewCasePage() {
           <div className="flex items-center gap-2 font-semibold mb-4">
             <FileText size={16} className="text-accent-blue" /> Case Information
           </div>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="label block mb-1">Case ID (Auto-Generated)</label>
               <input className={inputCls} value="CC/2024/0849" readOnly style={{ color: 'var(--accent-cyan)' }} />
@@ -150,7 +150,7 @@ export default function NewCasePage() {
           <div className="flex items-center gap-2 font-semibold mb-4">
             <User size={16} className="text-accent-green" /> Victim Information
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="label block mb-1">Full Name *</label>
               <input className={inputCls} placeholder="Victim's full name" value={form.victim_name} onChange={set('victim_name')} required />
@@ -188,7 +188,7 @@ export default function NewCasePage() {
           <Alert variant="warning" icon="⚠️">
             If accused identity is not yet known, keep default "Unknown". This can be updated as investigation progresses.
           </Alert>
-          <div className="grid grid-cols-2 gap-4 mt-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3">
             <div>
               <label className="label block mb-1">Name (if known)</label>
               <input className={inputCls} placeholder="Accused name or 'Unknown'" value={form.accused_name} onChange={set('accused_name')} />
@@ -225,7 +225,7 @@ export default function NewCasePage() {
           <div className="flex items-center gap-2 font-semibold mb-4">
             <FileText size={16} className="text-accent-amber" /> Incident Details
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="label block mb-1">Date of Incident</label>
               <input type="date" className={inputCls} value={form.incident_date} onChange={set('incident_date')} />
@@ -257,7 +257,7 @@ export default function NewCasePage() {
         <div className="animate-slide-in space-y-4">
           <div className="card">
             <div className="font-semibold mb-3 text-sm">📋 Case Summary — Review Before Submitting</div>
-            <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
               {[
                 ['FIR Number', form.fir_number || 'Pending'],
                 ['Crime Category', CRIME_CATEGORY_LABELS[form.crime_category as keyof typeof CRIME_CATEGORY_LABELS]],
@@ -291,34 +291,34 @@ export default function NewCasePage() {
 
       {/* Navigation */}
       <div className="flex justify-between mt-6">
-        <button
-          className="btn-secondary"
+        <Button
+          variant="secondary"
           onClick={() => setStep(s => Math.max(0, s - 1))}
           disabled={step === 0}
         >
           ← Back
-        </button>
+        </Button>
         <div className="flex gap-3">
-          <button className="btn-secondary text-sm" onClick={() => toast('Draft saved!')}>
+          <Button variant="secondary" size="sm" onClick={() => toast('Draft saved!')}>
             Save Draft
-          </button>
+          </Button>
           {step < STEP_LABELS.length - 1 ? (
-            <button
-              className="btn-primary"
+            <Button
               onClick={() => setStep(s => Math.min(STEP_LABELS.length - 1, s + 1))}
             >
               Next →
-            </button>
+            </Button>
           ) : (
-            <button
-              className="btn-success"
+            <Button
+              variant="success"
               onClick={submit}
               disabled={submitting}
+              loading={submitting}
             >
               {submitting
-                ? '⏳ Registering...'
+                ? 'Registering...'
                 : '✅ Register Case & Analyze with AI →'}
-            </button>
+            </Button>
           )}
         </div>
       </div>

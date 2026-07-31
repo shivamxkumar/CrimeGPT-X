@@ -1,8 +1,9 @@
 'use client'
 import AppShell from '@/components/layout/AppShell'
-import { PageHeader, Alert, Spinner, EmptyState } from '@/components/ui'
+import { PageHeader, Alert, EmptyState, Button, Tabs, TabsList, TabsTrigger, AIThinking } from '@/components/ui'
 import { useState } from 'react'
 import { aiAPI } from '@/lib/api'
+import { ScanSearch } from 'lucide-react'
 
 type Tab = 'url' | 'chat' | 'email' | 'phone'
 
@@ -34,17 +35,14 @@ export default function CyberPage() {
     <AppShell>
       <PageHeader title="Cyber Crime Detection Engine" subtitle="AI-powered pattern detection for digital fraud" />
 
-      <div className="grid grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <div className="card">
           <div className="font-semibold text-sm mb-4">🕵️ Analyze Suspicious Content</div>
-          <div className="flex border-b border-white/[0.07] mb-4">
-            {tabs.map(t => (
-              <button key={t.id} onClick={() => { setActiveTab(t.id); setContent('') }}
-                className={`px-4 py-2 text-xs font-medium border-b-2 -mb-px transition-colors ${activeTab===t.id?'border-accent-blue text-accent-blue':'border-transparent text-text-secondary hover:text-text-primary'}`}>
-                {t.label}
-              </button>
-            ))}
-          </div>
+          <Tabs value={activeTab} onValueChange={v => { setActiveTab(v as Tab); setContent('') }}>
+            <TabsList className="mb-4 flex-wrap">
+              {tabs.map(t => <TabsTrigger key={t.id} value={t.id}>{t.label}</TabsTrigger>)}
+            </TabsList>
+          </Tabs>
 
           <label className="label block mb-1.5">{activeTab === 'url' ? 'Suspicious URL' : activeTab === 'phone' ? 'Phone Number' : activeTab === 'email' ? 'Email Content' : 'Message Content'}</label>
           {activeTab === 'url' || activeTab === 'phone'
@@ -52,14 +50,16 @@ export default function CyberPage() {
             : <textarea className="input text-sm mb-3" rows={5} value={content} onChange={e=>setContent(e.target.value)} placeholder="Paste the suspicious message content here" />
           }
 
-          <button className="btn-primary w-full justify-center" onClick={analyze} disabled={analyzing || !content.trim()}>
-            {analyzing ? <><Spinner size="sm"/> Analyzing...</> : '🔍 Analyze Threat'}
-          </button>
+          <Button className="w-full justify-center" onClick={analyze} disabled={analyzing || !content.trim()} loading={analyzing}>
+            {!analyzing && <ScanSearch size={15} />} {analyzing ? 'Analyzing...' : 'Analyze Threat'}
+          </Button>
         </div>
 
         {error && <Alert variant="error" icon="⚠️">{error}</Alert>}
 
-        {!error && !result && (
+        {analyzing && <AIThinking steps={['Scanning for known threat patterns...', 'Cross-checking phishing indicators...', 'Mapping applicable IT Act / BNS sections...']} label="Analyzing content" />}
+
+        {!analyzing && !error && !result && (
           <div className="card">
             <EmptyState icon="🕵️" title="No analysis yet" description="Enter a URL, message, email, or phone number and run analysis to see real AI-generated threat indicators." />
           </div>

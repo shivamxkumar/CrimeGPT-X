@@ -28,13 +28,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             position="top-right"
             toastOptions={{
               style: {
-                background: '#111f33',
-                color: '#e8f0fe',
-                border: '1px solid rgba(255,255,255,0.07)',
+                background: '#161d2c',
+                color: '#f3f4f6',
+                border: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: '12px',
                 fontSize: '13px',
               },
-              success: { iconTheme: { primary: '#00e676', secondary: '#111f33' } },
-              error:   { iconTheme: { primary: '#ff5252', secondary: '#111f33' } },
+              success: { iconTheme: { primary: '#22c55e', secondary: '#161d2c' } },
+              error:   { iconTheme: { primary: '#ef4444', secondary: '#161d2c' } },
             }}
           />
         </QueryProvider>

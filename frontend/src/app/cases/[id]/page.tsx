@@ -1,6 +1,6 @@
 'use client'
 import AppShell from '@/components/layout/AppShell'
-import { PageHeader, StatusBadge, PriorityBadge, LegalSectionCard, TimelineItem, Alert, Spinner } from '@/components/ui'
+import { PageHeader, StatusBadge, PriorityBadge, LegalSectionCard, TimelineItem, Alert, Spinner, Button } from '@/components/ui'
 import { useParams } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
@@ -31,16 +31,16 @@ export default function CaseDetailPage() {
       <PageHeader title={`Case ${c.case_id}`} subtitle={`${CRIME_CATEGORY_LABELS[c.crime_category as keyof typeof CRIME_CATEGORY_LABELS]} · ${c.police_station}`}>
         <StatusBadge status={c.status as any} />
         <PriorityBadge priority={c.priority as any} />
-        <Link href="/legal" className="btn-primary text-sm">🤖 AI Legal Analysis</Link>
+        <Link href="/legal"><Button size="sm">🤖 AI Legal Analysis</Button></Link>
       </PageHeader>
 
       {/* Quick stats */}
-      <div className="grid grid-cols-4 gap-4 mb-5">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
         {[
-          { label: 'FIR Number', value: c.fir_number || 'Pending', color: '#00d4ff' },
-          { label: 'Amount Defrauded', value: formatCurrency(c.amount_defrauded), color: '#ff5252' },
-          { label: 'Date Registered', value: formatDate(c.created_at), color: '#1a6cf6' },
-          { label: 'AI Sections', value: `${c.ai_sections?.length || 0} Identified`, color: '#b57bee' },
+          { label: 'FIR Number', value: c.fir_number || 'Pending', color: '#60a5fa' },
+          { label: 'Amount Defrauded', value: formatCurrency(c.amount_defrauded), color: '#ef4444' },
+          { label: 'Date Registered', value: formatDate(c.created_at), color: '#3b82f6' },
+          { label: 'AI Sections', value: `${c.ai_sections?.length || 0} Identified`, color: '#8b5cf6' },
         ].map(s => (
           <div key={s.label} className="card" style={{ borderTop: `2px solid ${s.color}` }}>
             <div className="text-[10px] text-text-muted uppercase tracking-wide mb-1">{s.label}</div>
@@ -49,11 +49,11 @@ export default function CaseDetailPage() {
         ))}
       </div>
 
-      <div className="grid grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {/* Left: Case details */}
-        <div className="col-span-2 space-y-4">
+        <div className="lg:col-span-2 space-y-4">
           {/* Parties */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="card">
               <div className="font-semibold text-sm mb-3 flex items-center gap-2">🧑 Victim</div>
               <div className="space-y-2 text-sm">
@@ -86,7 +86,7 @@ export default function CaseDetailPage() {
             <div className="card">
               <div className="flex items-center justify-between mb-3">
                 <div className="font-semibold text-sm">⚖️ AI Legal Sections</div>
-                <Link href="/legal" className="btn-secondary text-xs px-3 py-1.5">Re-analyze →</Link>
+                <Link href="/legal"><Button variant="secondary" size="sm">Re-analyze →</Button></Link>
               </div>
               {c.ai_sections.map((s: any, i: number) => <LegalSectionCard key={i} section={s} />)}
             </div>
@@ -94,7 +94,7 @@ export default function CaseDetailPage() {
             <div className="card">
               <div className="font-semibold text-sm mb-2">⚖️ AI Legal Sections</div>
               <div className="text-sm text-text-secondary mb-3">This case hasn't been analyzed yet.</div>
-              <Link href="/legal" className="btn-primary text-sm">🤖 Run AI Legal Analysis</Link>
+              <Link href="/legal"><Button size="sm">🤖 Run AI Legal Analysis</Button></Link>
             </div>
           )}
 
@@ -123,10 +123,10 @@ export default function CaseDetailPage() {
           <div className="card">
             <div className="font-semibold text-sm mb-3">⚡ Quick Actions</div>
             <div className="flex flex-wrap gap-2">
-              <Link href="/evidence" className="btn-secondary text-sm">📁 Upload Evidence</Link>
-              <Link href="/documents" className="btn-secondary text-sm">📄 Generate Documents</Link>
-              <Link href="/diary" className="btn-secondary text-sm">📅 View Case Diary</Link>
-              <Link href="/legal" className="btn-primary text-sm">🤖 Legal AI Chat</Link>
+              <Link href="/evidence"><Button variant="secondary" size="sm">📁 Upload Evidence</Button></Link>
+              <Link href="/documents"><Button variant="secondary" size="sm">📄 Generate Documents</Button></Link>
+              <Link href="/diary"><Button variant="secondary" size="sm">📅 View Case Diary</Button></Link>
+              <Link href="/legal"><Button size="sm">🤖 Legal AI Chat</Button></Link>
             </div>
           </div>
         </div>
@@ -168,9 +168,11 @@ export default function CaseDetailPage() {
                   <option value="critical">Critical</option>
                 </select>
               </div>
-              <button
-                className="btn-primary w-full justify-center text-sm mt-1"
+              <Button
+                className="w-full justify-center mt-1"
+                size="sm"
                 disabled={updateCase.isPending || (!pendingStatus && !pendingPriority)}
+                loading={updateCase.isPending}
                 onClick={() => {
                   const payload: Record<string, string> = {}
                   if (pendingStatus) payload.status = pendingStatus
@@ -179,7 +181,7 @@ export default function CaseDetailPage() {
                 }}
               >
                 {updateCase.isPending ? 'Saving…' : 'Save Changes'}
-              </button>
+              </Button>
             </div>
           </div>
 

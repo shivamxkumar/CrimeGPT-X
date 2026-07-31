@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import Sidebar from './Sidebar'
 import Topbar from './Topbar'
 import { useAuthStore } from '@/lib/store'
+import { PageTransition } from '@/components/ui/motion'
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const { user } = useAuthStore()
@@ -38,8 +39,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       <Topbar onMenuClick={() => setSidebarOpen(true)} />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-        <main className="flex-1 overflow-y-auto overflow-x-hidden cyber-bg p-4 md:p-6">
-          <div className="relative z-10">{children}</div>
+        <main className="flex-1 overflow-y-auto overflow-x-hidden app-bg p-4 md:p-6">
+          <div className="relative z-10">
+            <PageTransition>{children}</PageTransition>
+          </div>
         </main>
       </div>
     </div>
