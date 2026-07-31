@@ -82,3 +82,4 @@ test-results/
 # Production secrets
 secrets/
 credentials/
+.vercel

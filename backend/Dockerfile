@@ -44,4 +44,9 @@ USER crimegpt
 EXPOSE 8000
 
 # Shell form so ${PORT} expands — Railway injects a dynamic PORT at runtime.
-CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 4 --loop uvloop
+# WEB_CONCURRENCY defaults to 1: each worker is a separate process with its
+# own memory footprint, and 4 workers alongside easyocr/sentence-transformers
+# exceeds a 1GB plan's memory limit and gets OOM-killed shortly after
+# startup (observed on Railway's trial plan). Raise it via an env var once
+# deployed on a plan with more headroom.
+CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers ${WEB_CONCURRENCY:-1} --loop uvloop
