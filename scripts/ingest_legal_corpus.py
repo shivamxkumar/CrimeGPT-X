@@ -26,14 +26,18 @@ Input file format — a JSON array of real judgments:
   ...
 ]
 
-Each entry is embedded with sentence-transformers (all-MiniLM-L6-v2) and
+Each entry is embedded via the Gemini embeddings API (same model the app
+uses at query time — see app/services/ai_service.py's EMBEDDING_MODEL) and
 upserted into the ChromaDB `landmark_judgments` collection, keyed by `id`
 (auto-generated from title+citation if omitted) so re-running the script
 with an updated corpus updates existing entries instead of duplicating them.
+
+Requires GEMINI_API_KEY in the environment.
 """
 import argparse
 import hashlib
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -42,6 +46,11 @@ import chromadb
 CHROMA_HOST = "localhost"
 CHROMA_PORT = 8001
 COLLECTION_NAME = "landmark_judgments"
+# Must match app/services/ai_service.py's EMBEDDING_MODEL — query-time and
+# ingest-time embeddings have to come from the same model/vector space for
+# similarity search to mean anything.
+EMBEDDING_MODEL = "gemini-embedding-001"
+EMBED_BATCH_SIZE = 20
 
 REQUIRED_FIELDS = {"title", "court", "year", "text"}
 
@@ -83,9 +92,12 @@ def ingest(corpus_path: str | None):
         print("Corpus file is empty — nothing to ingest.")
         return
 
-    print("Loading sentence-transformer embedder (all-MiniLM-L6-v2)...")
-    from sentence_transformers import SentenceTransformer
-    embedder = SentenceTransformer("all-MiniLM-L6-v2")
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        raise RuntimeError("GEMINI_API_KEY must be set in the environment to embed the corpus")
+
+    from google import genai
+    gemini = genai.Client(api_key=api_key)
 
     docs, metas, ids = [], [], []
     for entry in entries:
@@ -100,7 +112,13 @@ def ingest(corpus_path: str | None):
         })
         ids.append(entry.get("id") or _stable_id(entry))
 
-    embeddings = embedder.encode(docs).tolist()
+    print(f"Embedding {len(docs)} document(s) via {EMBEDDING_MODEL}...")
+    embeddings = []
+    for i in range(0, len(docs), EMBED_BATCH_SIZE):
+        batch = docs[i:i + EMBED_BATCH_SIZE]
+        response = gemini.models.embed_content(model=EMBEDDING_MODEL, contents=batch)
+        embeddings.extend(e.values for e in response.embeddings)
+
     collection.upsert(documents=docs, metadatas=metas, ids=ids, embeddings=embeddings)
 
     print(f"Ingested {len(docs)} real judgment(s).")

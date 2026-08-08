@@ -33,21 +33,30 @@ class Settings(BaseSettings):
     AI_MODEL: str = "gemini-3.5-flash"  # or "gemini-3.1-pro-preview" for higher-quality analysis
     AI_MAX_TOKENS: int = 4096
 
-    # ChromaDB
+    # ChromaDB — set CHROMA_HOST to talk to a real ChromaDB server (Docker
+    # Compose default). Leave CHROMA_HOST empty to fall back to an embedded
+    # on-disk client instead — no separate ChromaDB service required, used
+    # for free-tier deploys (e.g. Render) that have no room for a 5th service.
     CHROMA_HOST: str = "chromadb"
     CHROMA_PORT: int = 8000
+    CHROMA_PERSIST_DIR: str = "./chroma_data"
     CHROMA_COLLECTION_JUDGMENTS: str = "landmark_judgments"
 
-    # MinIO
+    # Object storage — MinIO locally (plain HTTP), or any S3-compatible
+    # provider in production (e.g. Cloudflare R2) by pointing MINIO_ENDPOINT
+    # at its host and setting MINIO_SECURE=true (R2/S3 require HTTPS).
     MINIO_ENDPOINT: str = "minio:9000"
     MINIO_ACCESS_KEY: str = "crimegpt_admin"
     MINIO_SECRET_KEY: str = "crimegpt_secret_2024"
+    MINIO_SECURE: bool = False
     MINIO_BUCKET_EVIDENCE: str = "evidence"
     MINIO_BUCKET_DOCUMENTS: str = "documents"
     MINIO_BUCKET_FIR: str = "fir-uploads"
 
-    # OCR
-    OCR_ENGINE: str = "easyocr"  # easyocr | tesseract
+    # OCR — tesseract by default (lightweight, no torch). "easyocr" needs
+    # the (heavy, torch-based) easyocr package installed separately; not in
+    # requirements.txt by default since it doesn't fit free-tier RAM limits.
+    OCR_ENGINE: str = "tesseract"  # easyocr | tesseract
     OCR_LANGUAGES: List[str] = ["en", "hi", "gu"]
 
     # CORS

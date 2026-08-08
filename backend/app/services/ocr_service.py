@@ -1,6 +1,7 @@
 """
 OCR Service — FIR Document Processing
-Multi-language OCR using EasyOCR (primary) and Tesseract (fallback)
+Multi-language OCR via Tesseract by default; EasyOCR when OCR_ENGINE=easyocr
+and the (optional, torch-based) easyocr package is installed.
 Extracts structured fields from FIR documents
 """
 import asyncio
@@ -9,6 +10,8 @@ import logging
 from typing import Dict, Any, Optional, List
 from pathlib import Path
 import tempfile
+
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -58,6 +61,8 @@ class OCRService:
         self._pytesseract = None
 
     def _get_reader(self):
+        if settings.OCR_ENGINE != "easyocr":
+            return None
         if not self._easyocr_reader:
             try:
                 import easyocr
@@ -91,7 +96,7 @@ class OCRService:
             result["pages"] = pages
             result["extracted_fields"] = self._extract_fields(text)
             result["confidence"] = self._calculate_confidence(result["extracted_fields"])
-            result["ocr_engine"] = "easyocr"
+            result["ocr_engine"] = "easyocr" if self._easyocr_reader else "tesseract"
 
         except Exception as e:
             logger.error(f"OCR processing failed: {e}")

@@ -6,6 +6,7 @@ Uses Google Gemini + ChromaDB RAG pipeline. No fallback/mock data — any
 failure to reach Gemini or a genuine infrastructure error is raised, never
 silently swapped for canned output.
 """
+import asyncio
 import json
 import re
 import time
@@ -34,7 +35,8 @@ class AIServiceError(Exception):
 # Lazy-loaded clients
 _gemini_client: Optional[genai.Client] = None
 _chroma_client: Optional[chromadb.AsyncHttpClient] = None
-_embedder = None
+
+EMBEDDING_MODEL = "gemini-embedding-001"
 
 
 def get_gemini() -> genai.Client:
@@ -51,21 +53,55 @@ def get_gemini() -> genai.Client:
     return _gemini_client
 
 
+class _EmbeddedChromaCollection:
+    """Wraps a sync PersistentClient collection with the async surface
+    (get_collection/count/query) that AsyncHttpClient's collection exposes,
+    so callers don't need to branch on which backend is active."""
+
+    def __init__(self, collection):
+        self._collection = collection
+
+    async def count(self):
+        return await asyncio.to_thread(self._collection.count)
+
+    async def query(self, **kwargs):
+        return await asyncio.to_thread(self._collection.query, **kwargs)
+
+
+class _EmbeddedChromaClient:
+    """Local on-disk ChromaDB client used when CHROMA_HOST is unset — no
+    separate ChromaDB server process required."""
+
+    def __init__(self, path: str):
+        self._client = chromadb.PersistentClient(path=path)
+
+    async def get_collection(self, name: str):
+        collection = await asyncio.to_thread(self._client.get_collection, name)
+        return _EmbeddedChromaCollection(collection)
+
+
 async def get_chroma():
     global _chroma_client
     if not _chroma_client:
-        _chroma_client = await chromadb.AsyncHttpClient(
-            host=settings.CHROMA_HOST, port=settings.CHROMA_PORT
-        )
+        if settings.CHROMA_HOST:
+            _chroma_client = await chromadb.AsyncHttpClient(
+                host=settings.CHROMA_HOST, port=settings.CHROMA_PORT
+            )
+        else:
+            _chroma_client = _EmbeddedChromaClient(settings.CHROMA_PERSIST_DIR)
     return _chroma_client
 
 
-def get_embedder():
-    global _embedder
-    if not _embedder:
-        from sentence_transformers import SentenceTransformer
-        _embedder = SentenceTransformer("all-MiniLM-L6-v2")
-    return _embedder
+async def embed_text(text: str) -> List[float]:
+    """Embed text via the Gemini embeddings API — no local model/torch
+    needed, which keeps the deployed image small enough for free-tier
+    memory limits (e.g. Render's 512MB instance)."""
+    client = get_gemini()
+    response = await client.aio.models.embed_content(
+        model=EMBEDDING_MODEL,
+        contents=text,
+    )
+    return response.embeddings[0].values
 
 
 LEGAL_ANALYSIS_SYSTEM_PROMPT = """You are a senior legal AI assistant for the Gujarat Police Cyber Crime Branch, India.
@@ -270,8 +306,10 @@ class AILegalService:
         if count == 0:
             return [], NO_JUDGMENTS_MESSAGE
 
-        embedder = get_embedder()
-        embedding = embedder.encode(query).tolist()
+        try:
+            embedding = await embed_text(query)
+        except Exception as e:
+            raise AIServiceError(f"Embedding request failed: {e}") from e
 
         results = await collection.query(
             query_embeddings=[embedding],
