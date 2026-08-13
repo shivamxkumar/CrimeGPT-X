@@ -26,23 +26,51 @@ const topSections = [
   {section:'BNS 420',count:48},{section:'IT Act 43',count:39},
   {section:'BNSS 180',count:34},{section:'BSA 63',count:28},
 ]
+const kpis = [
+  { label: 'Total Cases Filed', value: '312', change: '↑ 18% vs last month' },
+  { label: 'Conviction Rate', value: '67%', change: '↑ 4% vs last year' },
+  { label: 'Avg. Investigation', value: '43d', change: '↓ 12 days saved by AI' },
+  { label: 'Amount Recovered', value: '₹2.4Cr', change: '↑ 31% this year' },
+]
+
+function csvCell(value: string | number) {
+  const s = String(value)
+  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
+}
+
+function csvSection(title: string, header: string[], rows: (string | number)[][]) {
+  return [title, header.map(csvCell).join(','), ...rows.map(r => r.map(csvCell).join(','))].join('\n')
+}
+
+function downloadReport() {
+  const csv = [
+    csvSection('KPI Summary', ['Metric', 'Value', 'Change'], kpis.map(k => [k.label, k.value, k.change])),
+    csvSection('Officer Performance', ['Officer', 'Active', 'Closed', 'Docs', 'Score'], officerData.map(o => [o.name, o.active, o.closed, o.docs, o.score])),
+    csvSection('Most Applied Legal Sections', ['Section', 'Count'], topSections.map(s => [s.section, s.count])),
+  ].join('\n\n')
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
+  const url = window.URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `analytics-report-${new Date().toISOString().slice(0, 10)}.csv`
+  a.click()
+  window.URL.revokeObjectURL(url)
+}
+
 export default function AnalyticsPage() {
   const t = useT()
   return (
     <AppShell>
       <PageHeader title={t('analytics.title')} subtitle={t('analytics.subtitle', { branch: 'Ahmedabad Cyber Crime Branch' })}>
-        <select className="input text-xs w-36 py-1.5">
-          <option>Last 30 Days</option><option>Last 90 Days</option><option>This Year</option>
-        </select>
-        <Button variant="secondary" size="sm"><Download size={13} /> {t('analytics.exportReport')}</Button>
+        <Button variant="secondary" size="sm" onClick={downloadReport}><Download size={13} /> {t('analytics.exportReport')}</Button>
       </PageHeader>
 
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <StatCard label="Total Cases Filed"    value={312}   change="↑ 18% vs last month" changeType="up"  color={chartColors[0]} />
-        <StatCard label="Conviction Rate"      value="67%"   change="↑ 4% vs last year"   changeType="up"  color={chartColors[2]} />
-        <StatCard label="Avg. Investigation"   value="43d"   change="↓ 12 days saved by AI" changeType="up" color={chartColors[4]} />
-        <StatCard label="Amount Recovered"     value="₹2.4Cr" change="↑ 31% this year"    changeType="up"  color={chartColors[3]} />
+        {kpis.map((k, i) => (
+          <StatCard key={k.label} label={k.label} value={k.value} change={k.change} changeType="up" color={chartColors[[0, 2, 4, 3][i]]} />
+        ))}
       </div>
 
       {/* Monthly trends (lazy-loaded — Recharts is deferred until this section mounts) */}
