@@ -64,6 +64,9 @@ const en = {
   'nav.collapseSidebar': 'Collapse sidebar',
 
   'common.searchPlaceholder': 'Search cases...',
+  'common.searchHint': 'Search by case ID, FIR number, victim, or accused name',
+  'common.searching': 'Searching…',
+  'common.noResults': 'No cases found',
   'common.notifications': 'Notifications',
   'common.signedInAs': 'Signed in as {name}',
   'common.profile': 'Profile',
@@ -149,6 +152,9 @@ const hi: Record<keyof typeof en, string> = {
   'nav.collapseSidebar': 'साइडबार संक्षिप्त करें',
 
   'common.searchPlaceholder': 'मामले खोजें...',
+  'common.searchHint': 'मामला आईडी, एफआईआर नंबर, पीड़ित या आरोपी के नाम से खोजें',
+  'common.searching': 'खोजा जा रहा है…',
+  'common.noResults': 'कोई मामला नहीं मिला',
   'common.notifications': 'सूचनाएं',
   'common.signedInAs': '{name} के रूप में साइन इन है',
   'common.profile': 'प्रोफ़ाइल',
@@ -234,6 +240,9 @@ const gu: Record<keyof typeof en, string> = {
   'nav.collapseSidebar': 'સાઇડબાર સંકુચિત કરો',
 
   'common.searchPlaceholder': 'કેસ શોધો...',
+  'common.searchHint': 'કેસ આઈડી, એફઆઈઆર નંબર, પીડિત અથવા આરોપીના નામથી શોધો',
+  'common.searching': 'શોધી રહ્યાં છીએ…',
+  'common.noResults': 'કોઈ કેસ મળ્યો નથી',
   'common.notifications': 'સૂચનાઓ',
   'common.signedInAs': '{name} તરીકે સાઇન ઇન છે',
   'common.profile': 'પ્રોફાઇલ',

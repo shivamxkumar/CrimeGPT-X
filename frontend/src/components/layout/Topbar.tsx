@@ -1,12 +1,13 @@
 'use client'
 import { Bell, Search, Menu, ChevronDown, LogOut, Settings, User as UserIcon, Languages, Check } from 'lucide-react'
 import { useAuthStore } from '@/lib/store'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Breadcrumb } from '@/components/ui/Breadcrumb'
 import { Avatar } from '@/components/ui/Avatar'
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuLabel } from '@/components/ui/Menu'
 import { useT, useLanguageStore, LANGUAGES } from '@/lib/i18n'
+import SearchPalette from './SearchPalette'
 
 interface TopbarProps {
   onMenuClick: () => void
@@ -15,8 +16,20 @@ interface TopbarProps {
 export default function Topbar({ onMenuClick }: TopbarProps) {
   const { user, logout } = useAuthStore()
   const [notifOpen, setNotifOpen] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
   const t = useT()
   const { language, setLanguage } = useLanguageStore()
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        setSearchOpen(true)
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [])
 
   return (
     <header className="h-16 flex-shrink-0 flex items-center px-3 md:px-5 gap-3 md:gap-4 glass border-b border-white/[0.06] z-30">
@@ -34,11 +47,22 @@ export default function Topbar({ onMenuClick }: TopbarProps) {
       <div className="flex-1" />
 
       {/* Search */}
-      <button className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-bg-card border border-white/[0.06] text-text-muted text-xs hover:border-white/[0.14] transition-all">
+      <button
+        onClick={() => setSearchOpen(true)}
+        className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-bg-card border border-white/[0.06] text-text-muted text-xs hover:border-white/[0.14] transition-all"
+      >
         <Search size={13} />
         <span>{t('common.searchPlaceholder')}</span>
         <span className="ml-2 font-mono text-[10px] opacity-50">⌘K</span>
       </button>
+      <button
+        onClick={() => setSearchOpen(true)}
+        aria-label={t('common.searchPlaceholder')}
+        className="md:hidden w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/[0.06] text-text-secondary flex-shrink-0"
+      >
+        <Search size={17} />
+      </button>
+      <SearchPalette open={searchOpen} onOpenChange={setSearchOpen} />
 
       {/* Language */}
       <DropdownMenu>
