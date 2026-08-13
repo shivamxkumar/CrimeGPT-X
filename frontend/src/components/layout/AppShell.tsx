@@ -3,11 +3,12 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Sidebar from './Sidebar'
 import Topbar from './Topbar'
+import DemoModeBanner from './DemoModeBanner'
 import { useAuthStore } from '@/lib/store'
 import { PageTransition } from '@/components/ui/motion'
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
-  const { user } = useAuthStore()
+  const { user, isDemoMode } = useAuthStore()
   const router = useRouter()
   // Zustand's persist middleware rehydrates `user` from localStorage
   // asynchronously after mount. Redirecting to /login before that finishes
@@ -36,6 +37,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex flex-col h-screen overflow-hidden">
+      {isDemoMode && <DemoModeBanner />}
       <Topbar onMenuClick={() => setSidebarOpen(true)} />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />

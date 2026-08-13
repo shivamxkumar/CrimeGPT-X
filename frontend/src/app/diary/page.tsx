@@ -6,8 +6,10 @@ import { useDiary, useAddDiaryEntry, useEvidence } from '@/hooks'
 import { motion } from 'framer-motion'
 import { Lock, CalendarClock, Send, StickyNote } from 'lucide-react'
 import { entryStyle } from '@/lib/diaryStyles'
+import { useAuthStore } from '@/lib/store'
 
 export default function DiaryPage() {
+  const isDemoMode = useAuthStore(s => s.isDemoMode)
   const { selectedCaseId, cases, isLoading: casesLoading } = useSelectedCase()
   const { data: entries, isLoading, isError } = useDiary(selectedCaseId || '')
   const { data: evidence } = useEvidence(selectedCaseId || '')
@@ -92,17 +94,19 @@ export default function DiaryPage() {
           </div>
           <div className="card flex-1">
             <div className="font-semibold text-sm mb-3 flex items-center gap-2"><StickyNote size={14} className="text-accent-blue" /> Add Officer Note</div>
+            {isDemoMode && <div className="text-xs text-text-muted mb-2">🔒 Read-only in the demo</div>}
             <textarea
               className="input text-sm w-full"
               rows={5}
               placeholder="Add an investigation note to this case's diary..."
               value={note}
+              disabled={isDemoMode}
               onChange={e => setNote(e.target.value)}
             />
             <Button
               className="mt-3"
               size="sm"
-              disabled={!note.trim() || addEntry.isPending || !selectedCaseId}
+              disabled={isDemoMode || !note.trim() || addEntry.isPending || !selectedCaseId}
               loading={addEntry.isPending}
               onClick={() => addEntry.mutate(
                 { entry_type: 'note', title: 'Officer Note', description: note },

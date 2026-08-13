@@ -12,6 +12,8 @@ import {
 import type { LucideIcon } from 'lucide-react'
 import toast from 'react-hot-toast'
 import Link from 'next/link'
+import { useAuthStore } from '@/lib/store'
+import DemoDisabledNotice from '@/components/layout/DemoDisabledNotice'
 
 interface ExtractedFields { fir_number?:string; date?:string; complainant_name?:string; phone?:string; address?:string; amount?:string; accused_name?:string; police_station?:string }
 
@@ -28,6 +30,7 @@ const FIELD_META: Record<string, { icon: LucideIcon; color: string }> = {
 const OCR_STEPS = ['Scanning document layout...', 'Running text recognition...', 'Extracting structured fields...', 'Scoring extraction confidence...']
 
 export default function FIRPage() {
+  const isDemoMode = useAuthStore(s => s.isDemoMode)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [extracted, setExtracted] = useState<ExtractedFields | null>(null)
@@ -74,6 +77,15 @@ export default function FIRPage() {
 
   const isImage = file?.type.startsWith('image/')
   const isPdf = file?.type === 'application/pdf'
+
+  if (isDemoMode) {
+    return (
+      <AppShell>
+        <PageHeader title="FIR Upload & OCR Extraction" subtitle="Upload FIR — real OCR extracts fields from the document" />
+        <DemoDisabledNotice feature="FIR upload" />
+      </AppShell>
+    )
+  }
 
   return (
     <AppShell>

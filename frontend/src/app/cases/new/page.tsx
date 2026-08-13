@@ -7,11 +7,14 @@ import { CRIME_CATEGORY_LABELS } from '@/types'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 import { ChevronRight, User, AlertTriangle, FileText } from 'lucide-react'
+import { useAuthStore } from '@/lib/store'
+import DemoDisabledNotice from '@/components/layout/DemoDisabledNotice'
 
 const STEP_LABELS = ['Case Info', 'Victim', 'Accused', 'Incident', 'Review']
 
 export default function NewCasePage() {
   const router = useRouter()
+  const isDemoMode = useAuthStore(s => s.isDemoMode)
   const [step, setStep] = useState(0)
   const [submitting, setSubmitting] = useState(false)
   const [form, setForm] = useState({
@@ -60,6 +63,15 @@ export default function NewCasePage() {
   }
 
   const inputCls = 'input w-full'
+
+  if (isDemoMode) {
+    return (
+      <AppShell>
+        <PageHeader title="Register New Case" subtitle="Single entry — all documents auto-populate from this data" />
+        <DemoDisabledNotice feature="Case registration" />
+      </AppShell>
+    )
+  }
 
   return (
     <AppShell>

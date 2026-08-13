@@ -9,6 +9,7 @@ import { evidenceAPI } from '@/lib/api'
 import { Evidence } from '@/types'
 import { Upload, Lock, CheckCircle, AlertTriangle, Download, Trash2, Search, HardDrive, CalendarDays, Fingerprint, ImageOff } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useAuthStore } from '@/lib/store'
 import toast from 'react-hot-toast'
 
 const typeIcons: Record<string,string> = {
@@ -67,6 +68,7 @@ function EvidencePreview({ evidence }: { evidence: Evidence }) {
 }
 
 export default function EvidencePage() {
+  const isDemoMode = useAuthStore(s => s.isDemoMode)
   const { selectedCaseId, cases, isLoading: casesLoading } = useSelectedCase()
   const { data: evidence, isLoading, isError } = useEvidence(selectedCaseId || '')
   const uploadMutation = useUploadEvidence(selectedCaseId || '')
@@ -104,7 +106,7 @@ export default function EvidencePage() {
     uploadMutation.mutate({ file })
   }, [selectedCaseId, uploadMutation])
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop, multiple: false, disabled: !selectedCaseId })
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop, multiple: false, disabled: !selectedCaseId || isDemoMode })
 
   const list: Evidence[] = useMemo(() => evidence || [], [evidence])
   const filtered = useMemo(() => list.filter(ev => {
@@ -135,8 +137,8 @@ export default function EvidencePage() {
           {/* Upload Zone */}
           <div
             {...getRootProps()}
-            className={`border-2 border-dashed rounded-xl2 p-8 text-center mb-5 cursor-pointer transition-all ${
-              isDragActive ? 'border-accent-blue bg-accent-blue/5' : 'border-white/10 hover:border-accent-blue/40 hover:bg-bg-card2'
+            className={`border-2 border-dashed rounded-xl2 p-8 text-center mb-5 transition-all ${
+              isDemoMode ? 'cursor-not-allowed opacity-60 border-white/10' : 'cursor-pointer ' + (isDragActive ? 'border-accent-blue bg-accent-blue/5' : 'border-white/10 hover:border-accent-blue/40 hover:bg-bg-card2')
             }`}
           >
             <input {...getInputProps()} />
@@ -148,8 +150,8 @@ export default function EvidencePage() {
             ) : (
               <>
                 <Upload size={36} className="mx-auto mb-3 text-text-muted" />
-                <div className="font-medium mb-1">{isDragActive ? 'Drop file here' : 'Drop evidence files here or click to upload'}</div>
-                <div className="text-sm text-text-secondary">Images, PDFs, Audio, Video, Chat exports — Max 50MB</div>
+                <div className="font-medium mb-1">{isDemoMode ? 'Evidence upload disabled in demo' : isDragActive ? 'Drop file here' : 'Drop evidence files here or click to upload'}</div>
+                <div className="text-sm text-text-secondary">{isDemoMode ? 'Browse the pre-loaded evidence below instead' : 'Images, PDFs, Audio, Video, Chat exports — Max 50MB'}</div>
               </>
             )}
           </div>
@@ -248,7 +250,7 @@ export default function EvidencePage() {
                   <Button variant="secondary" size="sm" aria-label="Download evidence" disabled={downloading} onClick={() => handleDownload(selected)}>
                     {downloading ? <Spinner size="sm" /> : <Download size={13} />}
                   </Button>
-                  <Button variant="danger" size="sm" aria-label="Delete evidence" disabled={deleteMutation.isPending} onClick={() => handleDelete(selected)}>
+                  <Button variant="danger" size="sm" aria-label="Delete evidence" disabled={isDemoMode || deleteMutation.isPending} onClick={() => handleDelete(selected)}>
                     {deleteMutation.isPending ? <Spinner size="sm" /> : <Trash2 size={13} />}
                   </Button>
                 </div>

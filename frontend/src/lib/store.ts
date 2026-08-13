@@ -19,9 +19,11 @@ interface AuthState {
   user: User | null
   token: string | null
   isLoading: boolean
+  isDemoMode: boolean
   login: (badge_number: string, password: string) => Promise<void>
   logout: () => void
   setUser: (user: User) => void
+  enterDemoMode: () => void
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -30,13 +32,14 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       token: null,
       isLoading: false,
+      isDemoMode: false,
 
       login: async (badge_number, password) => {
         set({ isLoading: true })
         try {
           const { data } = await authAPI.login(badge_number, password)
           localStorage.setItem('crimegpt_token', data.access_token)
-          set({ user: data.user, token: data.access_token, isLoading: false })
+          set({ user: data.user, token: data.access_token, isLoading: false, isDemoMode: false })
         } catch (e) {
           set({ isLoading: false })
           throw e
@@ -45,14 +48,36 @@ export const useAuthStore = create<AuthState>()(
 
       logout: () => {
         localStorage.removeItem('crimegpt_token')
-        set({ user: null, token: null })
+        set({ user: null, token: null, isDemoMode: false })
       },
 
       setUser: (user) => set({ user }),
+
+      // "Explore Live Demo" — no backend call, no real credentials. Populates
+      // the same store the AppShell/Sidebar already gate on, purely with
+      // client-generated mock data. See lib/demo/mockData.ts + demoMode.ts.
+      // Keep this profile in sync with DEMO_OFFICER in lib/demo/mockData.ts
+      // (duplicated rather than imported — that file's User type carries
+      // fields this store's narrower local User type doesn't need).
+      enterDemoMode: () => {
+        set({
+          user: {
+            id: 'demo-officer-001',
+            badge_number: 'AHM-DEMO-IO-001',
+            name: 'SI Kavita Rathod',
+            email: 'kavita.rathod@demo.crimegpt-x.online',
+            role: 'io',
+            police_station: 'Ahmedabad Cyber Crime Branch',
+            rank: 'Sub-Inspector',
+          },
+          token: 'demo-mode',
+          isDemoMode: true,
+        })
+      },
     }),
     {
       name: 'crimegpt-auth',
-      partialize: (state) => ({ user: state.user, token: state.token }),
+      partialize: (state) => ({ user: state.user, token: state.token, isDemoMode: state.isDemoMode }),
     }
   )
 )

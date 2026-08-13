@@ -22,6 +22,7 @@ interface NavItem {
   label: string
   badge?: string
   roles?: string[]
+  hideInDemo?: boolean
 }
 
 const navGroups: { label: string | null; items: NavItem[] }[] = [
@@ -35,8 +36,8 @@ const navGroups: { label: string | null; items: NavItem[] }[] = [
     label: 'Investigation',
     items: [
       { href: '/cases',     icon: FolderOpen, label: 'All Cases' },
-      { href: '/cases/new', icon: FilePlus,   label: 'New Case' },
-      { href: '/fir',       icon: FileText,   label: 'FIR Upload & OCR' },
+      { href: '/cases/new', icon: FilePlus,   label: 'New Case', hideInDemo: true },
+      { href: '/fir',       icon: FileText,   label: 'FIR Upload & OCR', hideInDemo: true },
     ],
   },
   {
@@ -71,7 +72,7 @@ interface SidebarProps {
 
 export default function Sidebar({ open, onClose }: SidebarProps) {
   const pathname = usePathname()
-  const { user, logout } = useAuthStore()
+  const { user, logout, isDemoMode } = useAuthStore()
   const [collapsed, setCollapsed] = useState(false)
   const { data: caseStats } = useQuery({
     queryKey: ['case-stats'],
@@ -94,6 +95,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
 
   const renderLink = (item: NavItem) => {
     if (item.roles && !item.roles.includes(user?.role || '')) return null
+    if (item.hideInDemo && isDemoMode) return null
     const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
     const Icon = item.icon
     const badge = item.badge || badges[item.href]

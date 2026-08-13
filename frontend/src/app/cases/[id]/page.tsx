@@ -9,9 +9,11 @@ import { useUpdateCase } from '@/hooks'
 import { CRIME_CATEGORY_LABELS, CaseStatus, CasePriority } from '@/types'
 import Link from 'next/link'
 import { formatCurrency, formatDate, formatDateTime } from '@/lib/utils'
+import { useAuthStore } from '@/lib/store'
 
 export default function CaseDetailPage() {
   const { id } = useParams<{ id: string }>()
+  const isDemoMode = useAuthStore(s => s.isDemoMode)
   const { data: c, isLoading, isError } = useQuery({
     queryKey: ['case', id],
     queryFn: () => casesAPI.get(id).then(r => r.data),
@@ -147,10 +149,11 @@ export default function CaseDetailPage() {
 
           <div className="card">
             <div className="font-semibold text-sm mb-3">🔧 Case Management</div>
+            {isDemoMode && <div className="text-xs text-text-muted mb-2">🔒 Read-only in the demo</div>}
             <div className="space-y-2">
               <div>
                 <label className="label block mb-1">Update Status</label>
-                <select className="input w-full text-sm" defaultValue={c.status} onChange={e => setPendingStatus(e.target.value as CaseStatus)}>
+                <select className="input w-full text-sm" defaultValue={c.status} disabled={isDemoMode} onChange={e => setPendingStatus(e.target.value as CaseStatus)}>
                   <option value="registered">Registered</option>
                   <option value="active">Active</option>
                   <option value="in_review">In Review</option>
@@ -161,7 +164,7 @@ export default function CaseDetailPage() {
               </div>
               <div>
                 <label className="label block mb-1">Update Priority</label>
-                <select className="input w-full text-sm" defaultValue={c.priority} onChange={e => setPendingPriority(e.target.value as CasePriority)}>
+                <select className="input w-full text-sm" defaultValue={c.priority} disabled={isDemoMode} onChange={e => setPendingPriority(e.target.value as CasePriority)}>
                   <option value="low">Low</option>
                   <option value="medium">Medium</option>
                   <option value="high">High</option>
@@ -171,7 +174,7 @@ export default function CaseDetailPage() {
               <Button
                 className="w-full justify-center mt-1"
                 size="sm"
-                disabled={updateCase.isPending || (!pendingStatus && !pendingPriority)}
+                disabled={isDemoMode || updateCase.isPending || (!pendingStatus && !pendingPriority)}
                 loading={updateCase.isPending}
                 onClick={() => {
                   const payload: Record<string, string> = {}

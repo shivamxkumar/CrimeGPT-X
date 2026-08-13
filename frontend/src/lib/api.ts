@@ -4,6 +4,12 @@
  */
 import axios, { AxiosInstance, AxiosError } from 'axios'
 import toast from 'react-hot-toast'
+import { isDemoMode } from './demo/demoMode'
+import {
+  demoCasesAPI, demoFirAPI, demoAiAPI, demoJudgmentsAPI, demoDocsAPI,
+  demoEvidenceAPI, demoDiaryAPI, demoAnalyticsAPI, demoAdminAPI,
+  demoNotificationsAPI, demoDiaryRecentAPI,
+} from './demo/demoApi'
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
 
@@ -70,16 +76,17 @@ export const authAPI = {
 
 // ── Cases ─────────────────────────────────────────────────────
 export const casesAPI = {
-  list: (params?: any) => api.get('/cases/', { params }),
-  get: (id: string) => api.get(`/cases/${id}`),
-  create: (data: any) => api.post('/cases/', data),
-  update: (id: string, data: any) => api.patch(`/cases/${id}`, data),
-  stats: () => api.get('/cases/stats/summary'),
+  list: (params?: any) => isDemoMode() ? demoCasesAPI.list(params) : api.get('/cases/', { params }),
+  get: (id: string) => isDemoMode() ? demoCasesAPI.get(id) : api.get(`/cases/${id}`),
+  create: (data: any) => isDemoMode() ? demoCasesAPI.create() : api.post('/cases/', data),
+  update: (id: string, data: any) => isDemoMode() ? demoCasesAPI.update() : api.patch(`/cases/${id}`, data),
+  stats: () => isDemoMode() ? demoCasesAPI.stats() : api.get('/cases/stats/summary'),
 }
 
 // ── FIR ──────────────────────────────────────────────────────
 export const firAPI = {
   upload: (file: File) => {
+    if (isDemoMode()) return demoFirAPI.upload()
     const formData = new FormData()
     formData.append('file', file)
     return api.post('/fir/upload', formData, {
@@ -91,30 +98,31 @@ export const firAPI = {
 // ── AI ───────────────────────────────────────────────────────
 export const aiAPI = {
   analyzeFIR: (fir_text: string, case_id?: string) =>
-    api.post('/ai/analyze', { fir_text, case_id }),
+    isDemoMode() ? demoAiAPI.analyzeFIR(fir_text, case_id) : api.post('/ai/analyze', { fir_text, case_id }),
   chat: (messages: any[], case_id?: string) =>
-    api.post('/ai/chat', { messages, case_id }),
+    isDemoMode() ? demoAiAPI.chat(messages, case_id) : api.post('/ai/chat', { messages, case_id }),
   cyberAnalyze: (content_type: string, content: string) =>
-    api.post('/ai/cyber-analyze', { content_type, content }),
+    isDemoMode() ? demoAiAPI.cyberAnalyze(content_type, content) : api.post('/ai/cyber-analyze', { content_type, content }),
 }
 
 // ── Judgments (RAG) ────────────────────────────────────────────
 export const judgmentsAPI = {
-  search: (q: string) => api.get('/ai/judgments/search', { params: { q } }),
+  search: (q: string) => isDemoMode() ? demoJudgmentsAPI.search(q) : api.get('/ai/judgments/search', { params: { q } }),
 }
 
 // ── Documents ────────────────────────────────────────────────
 export const docsAPI = {
   generate: (case_id: string, doc_type: string, language = 'en') =>
-    api.post('/documents/generate', { case_id, doc_type, language }),
-  listForCase: (case_id: string) => api.get(`/documents/by-case/${case_id}`),
-  exportPdf: (doc_id: string) => api.get(`/documents/${doc_id}/export/pdf`, { responseType: 'blob' }),
-  exportDocx: (doc_id: string) => api.get(`/documents/${doc_id}/export/docx`, { responseType: 'blob' }),
+    isDemoMode() ? demoDocsAPI.generate(case_id, doc_type) : api.post('/documents/generate', { case_id, doc_type, language }),
+  listForCase: (case_id: string) => isDemoMode() ? demoDocsAPI.listForCase(case_id) : api.get(`/documents/by-case/${case_id}`),
+  exportPdf: (doc_id: string) => isDemoMode() ? demoDocsAPI.exportPdf() : api.get(`/documents/${doc_id}/export/pdf`, { responseType: 'blob' }),
+  exportDocx: (doc_id: string) => isDemoMode() ? demoDocsAPI.exportDocx() : api.get(`/documents/${doc_id}/export/docx`, { responseType: 'blob' }),
 }
 
 // ── Evidence ─────────────────────────────────────────────────
 export const evidenceAPI = {
   upload: (case_id: string, file: File, category = 'primary', description = '') => {
+    if (isDemoMode()) return demoEvidenceAPI.upload()
     const formData = new FormData()
     formData.append('file', file)
     formData.append('category', category)
@@ -123,40 +131,40 @@ export const evidenceAPI = {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
   },
-  list: (case_id: string) => api.get(`/evidence/${case_id}`),
-  download: (evidence_id: string) => api.get(`/evidence/item/${evidence_id}/download`, { responseType: 'blob' }),
-  delete: (evidence_id: string) => api.delete(`/evidence/item/${evidence_id}`),
+  list: (case_id: string) => isDemoMode() ? demoEvidenceAPI.list(case_id) : api.get(`/evidence/${case_id}`),
+  download: (evidence_id: string) => isDemoMode() ? demoEvidenceAPI.download(evidence_id) : api.get(`/evidence/item/${evidence_id}/download`, { responseType: 'blob' }),
+  delete: (evidence_id: string) => isDemoMode() ? demoEvidenceAPI.delete() : api.delete(`/evidence/item/${evidence_id}`),
 }
 
 // ── Diary ────────────────────────────────────────────────────
 export const diaryAPI = {
-  list: (case_id: string) => api.get(`/diary/${case_id}`),
-  add: (case_id: string, entry: any) => api.post(`/diary/${case_id}`, entry),
+  list: (case_id: string) => isDemoMode() ? demoDiaryAPI.list(case_id) : api.get(`/diary/${case_id}`),
+  add: (case_id: string, entry: any) => isDemoMode() ? demoDiaryAPI.add() : api.post(`/diary/${case_id}`, entry),
 }
 
 // ── Analytics ────────────────────────────────────────────────
 export const analyticsAPI = {
-  overview: () => api.get('/analytics/overview'),
-  crimeDistribution: () => api.get('/analytics/crime-distribution'),
-  weeklyTrend: () => api.get('/analytics/weekly-trend'),
-  documentStats: () => api.get('/analytics/document-stats'),
+  overview: () => isDemoMode() ? demoAnalyticsAPI.overview() : api.get('/analytics/overview'),
+  crimeDistribution: () => isDemoMode() ? demoAnalyticsAPI.crimeDistribution() : api.get('/analytics/crime-distribution'),
+  weeklyTrend: () => isDemoMode() ? demoAnalyticsAPI.weeklyTrend() : api.get('/analytics/weekly-trend'),
+  documentStats: () => isDemoMode() ? demoAnalyticsAPI.documentStats() : api.get('/analytics/document-stats'),
 }
 
 // ── Admin ────────────────────────────────────────────────────
 export const adminAPI = {
-  users: () => api.get('/admin/users'),
-  auditLogs: () => api.get('/admin/audit-logs'),
-  toggleUser: (id: string) => api.patch(`/admin/users/${id}/toggle-active`),
-  systemStatus: () => api.get('/admin/system-status'),
+  users: () => isDemoMode() ? demoAdminAPI.users() : api.get('/admin/users'),
+  auditLogs: () => isDemoMode() ? demoAdminAPI.auditLogs() : api.get('/admin/audit-logs'),
+  toggleUser: (id: string) => isDemoMode() ? demoAdminAPI.toggleUser() : api.patch(`/admin/users/${id}/toggle-active`),
+  systemStatus: () => isDemoMode() ? demoAdminAPI.systemStatus() : api.get('/admin/system-status'),
 }
 
 // ── Notifications ─────────────────────────────────────────────
 export const notificationsAPI = {
-  list: () => api.get('/notifications/'),
-  markRead: (id: string) => api.patch(`/notifications/${id}/read`),
+  list: () => isDemoMode() ? demoNotificationsAPI.list() : api.get('/notifications/'),
+  markRead: (id: string) => isDemoMode() ? demoNotificationsAPI.markRead() : api.patch(`/notifications/${id}/read`),
 }
 
 // ── Diary ─────────────────────────────────────────────────────
 export const diaryRecentAPI = {
-  recent: (limit = 10) => api.get('/diary/recent', { params: { limit } }),
+  recent: (limit = 10) => isDemoMode() ? demoDiaryRecentAPI.recent(limit) : api.get('/diary/recent', { params: { limit } }),
 }

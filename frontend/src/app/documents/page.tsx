@@ -1,9 +1,10 @@
 'use client'
 import AppShell from '@/components/layout/AppShell'
 import { PageHeader, Alert, Spinner, CaseSelector, useSelectedCase, EmptyState, Button } from '@/components/ui'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { docsAPI } from '@/lib/api'
+import { useAuthStore } from '@/lib/store'
 import { DOC_TYPE_LABELS, Document } from '@/types'
 import { Scale, Landmark, HeartPulse, Package, UserCheck, ScanFace, FileClock, Link2, Zap, Eye, Sparkles, Download, FileDown, X, FileCheck } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -30,11 +31,24 @@ function downloadBlob(blob: Blob, filename: string) {
 
 export default function DocumentsPage() {
   const { selectedCaseId, cases, isLoading: casesLoading } = useSelectedCase()
+  const isDemoMode = useAuthStore(s => s.isDemoMode)
   const [generating, setGenerating] = useState<string | null>(null)
   const [exporting, setExporting] = useState<string | null>(null)
   const [docs, setDocs] = useState<Record<string, Document>>({})
   const [preview, setPreview] = useState<Document | null>(null)
   const [error, setError] = useState<string | null>(null)
+
+  // Demo cases come with documents already generated (status-dependent) —
+  // load them on case switch instead of requiring a manual "Generate" click.
+  useEffect(() => {
+    if (!isDemoMode || !selectedCaseId) return
+    setDocs({})
+    docsAPI.listForCase(selectedCaseId).then(({ data }) => {
+      const byType: Record<string, Document> = {}
+      for (const d of data as Document[]) byType[d.doc_type] = d
+      setDocs(byType)
+    }).catch(() => {})
+  }, [isDemoMode, selectedCaseId])
 
   async function generateDoc(docType: string) {
     if (!selectedCaseId) return
@@ -46,7 +60,10 @@ export default function DocumentsPage() {
       setPreview(data)
       toast.success(`${DOC_TYPE_LABELS[docType]} generated!`)
     } catch (e: any) {
-      setError(e?.response?.data?.detail || `Failed to generate ${DOC_TYPE_LABELS[docType]} — check the backend connection.`)
+      // In demo mode, docsAPI.generate already shows a specific "no pre-generated content" toast — avoid a confusing generic error.
+      if (e?.message !== 'DEMO_READ_ONLY') {
+        setError(e?.response?.data?.detail || `Failed to generate ${DOC_TYPE_LABELS[docType]} — check the backend connection.`)
+      }
     } finally {
       setGenerating(null)
     }
@@ -63,8 +80,9 @@ export default function DocumentsPage() {
     try {
       const { data } = format === 'pdf' ? await docsAPI.exportPdf(doc.id) : await docsAPI.exportDocx(doc.id)
       downloadBlob(data, `${doc.title.replace(/\s+/g, '_')}.${format}`)
-    } catch {
-      toast.error(`${format.toUpperCase()} export failed`)
+    } catch (e: any) {
+      // In demo mode api.ts already shows a specific "disabled in demo" toast — avoid a second, generic one.
+      if (e?.message !== 'DEMO_READ_ONLY') toast.error(`${format.toUpperCase()} export failed`)
     } finally {
       setExporting(null)
     }

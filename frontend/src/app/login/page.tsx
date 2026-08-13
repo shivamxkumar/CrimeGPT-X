@@ -8,11 +8,6 @@ import { motion } from 'framer-motion'
 import { ShieldCheck, FileSearch, Fingerprint, ScanEye, KeyRound, Eye, Lock } from 'lucide-react'
 import toast from 'react-hot-toast'
 
-// Demo account seeded for the hackathon (DEMO-001, is_demo=true data only).
-// Credentials come from env vars (set in Vercel), never committed to source.
-const DEMO_BADGE = process.env.NEXT_PUBLIC_DEMO_BADGE
-const DEMO_PASSWORD = process.env.NEXT_PUBLIC_DEMO_PASSWORD
-
 const FEATURES = [
   { icon: FileSearch, title: 'FIR Upload & OCR', desc: 'Digitize FIRs instantly with entity extraction' },
   { icon: ShieldCheck, title: 'AI Legal Analysis', desc: 'BNS, BNSS & BSA section mapping with confidence scores' },
@@ -31,7 +26,7 @@ export default function LoginPage() {
   const [badge, setBadge] = useState('')
   const [password, setPassword] = useState('')
   const [demoLoading, setDemoLoading] = useState(false)
-  const { login, isLoading } = useAuthStore()
+  const { login, isLoading, enterDemoMode } = useAuthStore()
   const router = useRouter()
 
   async function handleLogin(e: React.FormEvent) {
@@ -45,18 +40,14 @@ export default function LoginPage() {
     }
   }
 
-  async function handleViewDemo() {
-    if (!DEMO_BADGE || !DEMO_PASSWORD) return
+  // No backend call, no credentials — populates the auth store with a mock
+  // officer profile and flips isDemoMode, which the API client reads to
+  // serve mock data everywhere instead of hitting the real backend.
+  function handleViewDemo() {
     setDemoLoading(true)
-    try {
-      await login(DEMO_BADGE, DEMO_PASSWORD)
-      toast.success('Viewing demo environment')
-      router.push('/dashboard')
-    } catch {
-      toast.error('Demo login failed — please try again')
-    } finally {
-      setDemoLoading(false)
-    }
+    enterDemoMode()
+    toast.success('Viewing live demo — sample data, fully read-only')
+    router.push('/dashboard')
   }
 
   return (
@@ -167,29 +158,25 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          {DEMO_BADGE && DEMO_PASSWORD && (
-            <>
-              <div className="mt-5 flex items-center gap-3 text-[10px] text-text-muted uppercase tracking-widest">
-                <div className="flex-1 h-px bg-white/[0.08]" />
-                or
-                <div className="flex-1 h-px bg-white/[0.08]" />
-              </div>
+          <div className="mt-5 flex items-center gap-3 text-[10px] text-text-muted uppercase tracking-widest">
+            <div className="flex-1 h-px bg-white/[0.08]" />
+            or
+            <div className="flex-1 h-px bg-white/[0.08]" />
+          </div>
 
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={handleViewDemo}
-                disabled={demoLoading || isLoading}
-                loading={demoLoading}
-                className="w-full justify-center py-3 mt-4"
-              >
-                {!demoLoading && <Eye size={15} />} View Demo
-              </Button>
-              <div className="mt-2 text-center text-[11px] text-text-muted">
-                Explore a pre-loaded demo environment with sample cases, evidence, and AI analysis
-              </div>
-            </>
-          )}
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={handleViewDemo}
+            disabled={demoLoading || isLoading}
+            loading={demoLoading}
+            className="w-full justify-center py-3 mt-4"
+          >
+            {!demoLoading && <Eye size={15} />} Explore Live Demo
+          </Button>
+          <div className="mt-2 text-center text-[11px] text-text-muted">
+            20 sample cases, full AI analysis, evidence & reports — no sign-in required, fully read-only
+          </div>
 
           <div className="mt-8 flex items-center justify-center gap-1.5 text-[11px] text-text-muted">
             <Lock size={11} />
