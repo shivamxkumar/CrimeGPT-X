@@ -6,8 +6,14 @@ import { motion } from 'framer-motion'
 import { docsAPI } from '@/lib/api'
 import { useAuthStore } from '@/lib/store'
 import { DOC_TYPE_LABELS, Document } from '@/types'
-import { Scale, Landmark, HeartPulse, Package, UserCheck, ScanFace, FileClock, Link2, Zap, Eye, Sparkles, Download, FileDown, X, FileCheck } from 'lucide-react'
+import { Scale, Landmark, HeartPulse, Package, UserCheck, ScanFace, FileClock, Link2, Zap, Eye, Sparkles, Download, FileDown, X, FileCheck, Languages } from 'lucide-react'
 import toast from 'react-hot-toast'
+
+const LANGUAGES = [
+  { code: 'en', label: 'English' },
+  { code: 'hi', label: 'हिन्दी' },
+  { code: 'gu', label: 'ગુજરાતી' },
+] as const
 
 const DOC_CONFIGS = [
   { type: 'chargesheet',        icon: Scale,     color: '#3b82f6', desc: 'Auto-generated with BNS sections, accused details, evidence list' },
@@ -37,26 +43,33 @@ export default function DocumentsPage() {
   const [docs, setDocs] = useState<Record<string, Document>>({})
   const [preview, setPreview] = useState<Document | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [language, setLanguage] = useState<string>('en')
 
   // Demo cases come with documents already generated (status-dependent) —
   // load them on case switch instead of requiring a manual "Generate" click.
   useEffect(() => {
     if (!isDemoMode || !selectedCaseId) return
     setDocs({})
+    setLanguage('en')
     docsAPI.listForCase(selectedCaseId).then(({ data }) => {
       const byType: Record<string, Document> = {}
-      for (const d of data as Document[]) byType[d.doc_type] = d
+      for (const d of data as Document[]) byType[docKey(d.doc_type, 'en')] = d
       setDocs(byType)
     }).catch(() => {})
   }, [isDemoMode, selectedCaseId])
 
+  function docKey(docType: string, lang: string) {
+    return `${docType}:${lang}`
+  }
+
   async function generateDoc(docType: string) {
     if (!selectedCaseId) return
+    const key = docKey(docType, language)
     setGenerating(docType)
     setError(null)
     try {
-      const { data } = await docsAPI.generate(selectedCaseId, docType)
-      setDocs(prev => ({ ...prev, [docType]: data }))
+      const { data } = await docsAPI.generate(selectedCaseId, docType, language)
+      setDocs(prev => ({ ...prev, [key]: data }))
       setPreview(data)
       toast.success(`${DOC_TYPE_LABELS[docType]} generated!`)
     } catch (e: any) {
@@ -90,7 +103,7 @@ export default function DocumentsPage() {
 
   const statusBadge = (docType: string) => {
     if (generating === docType) return <span className="badge-blue flex items-center gap-1"><Spinner size="sm"/>Generating</span>
-    if (docs[docType]) return <span className="badge-green">✓ Generated</span>
+    if (docs[docKey(docType, language)]) return <span className="badge-green">✓ Generated</span>
     return <span className="badge-gray">Not generated</span>
   }
 
@@ -112,6 +125,26 @@ export default function DocumentsPage() {
       <Alert variant="info" icon="⚡">
         All documents are auto-populated from real case data. <strong>Zero duplicate entry.</strong> Generate, preview, then export as PDF or DOCX.
       </Alert>
+
+      <div className="flex items-center gap-2 mb-1">
+        <Languages size={14} className="text-text-secondary" />
+        <span className="text-xs text-text-secondary mr-1">Document language:</span>
+        <div className="flex gap-1">
+          {LANGUAGES.map(l => (
+            <button
+              key={l.code}
+              onClick={() => { setLanguage(l.code); setPreview(null) }}
+              className={`px-2.5 py-1 rounded-full text-xs border transition-colors ${
+                language === l.code
+                  ? 'bg-white/[0.12] border-white/[0.2] text-white'
+                  : 'border-white/[0.08] text-text-secondary hover:text-white hover:border-white/[0.15]'
+              }`}
+            >
+              {l.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
       {error && <Alert variant="error" icon="⚠️">{error}</Alert>}
 
@@ -136,20 +169,20 @@ export default function DocumentsPage() {
                   <div className="flex gap-2 flex-wrap">
                     <Button
                       size="sm"
-                      onClick={() => docs[cfg.type] ? setPreview(docs[cfg.type]) : generateDoc(cfg.type)}
+                      onClick={() => docs[docKey(cfg.type, language)] ? setPreview(docs[docKey(cfg.type, language)]) : generateDoc(cfg.type)}
                       disabled={generating === cfg.type}
                       loading={generating === cfg.type}
                     >
-                      {generating !== cfg.type && (docs[cfg.type] ? <Eye size={13} /> : <Sparkles size={13} />)}
-                      {docs[cfg.type] ? 'View' : 'Generate'}
+                      {generating !== cfg.type && (docs[docKey(cfg.type, language)] ? <Eye size={13} /> : <Sparkles size={13} />)}
+                      {docs[docKey(cfg.type, language)] ? 'View' : 'Generate'}
                     </Button>
-                    {docs[cfg.type] && (
+                    {docs[docKey(cfg.type, language)] && (
                       <>
-                        <Button variant="secondary" size="sm" disabled={exporting === `${docs[cfg.type].id}-pdf`} onClick={() => exportDoc(docs[cfg.type], 'pdf')}>
-                          {exporting === `${docs[cfg.type].id}-pdf` ? <Spinner size="sm"/> : <><Download size={13}/> PDF</>}
+                        <Button variant="secondary" size="sm" disabled={exporting === `${docs[docKey(cfg.type, language)].id}-pdf`} onClick={() => exportDoc(docs[docKey(cfg.type, language)], 'pdf')}>
+                          {exporting === `${docs[docKey(cfg.type, language)].id}-pdf` ? <Spinner size="sm"/> : <><Download size={13}/> PDF</>}
                         </Button>
-                        <Button variant="secondary" size="sm" disabled={exporting === `${docs[cfg.type].id}-docx`} onClick={() => exportDoc(docs[cfg.type], 'docx')}>
-                          {exporting === `${docs[cfg.type].id}-docx` ? <Spinner size="sm"/> : <><FileDown size={13}/> DOCX</>}
+                        <Button variant="secondary" size="sm" disabled={exporting === `${docs[docKey(cfg.type, language)].id}-docx`} onClick={() => exportDoc(docs[docKey(cfg.type, language)], 'docx')}>
+                          {exporting === `${docs[docKey(cfg.type, language)].id}-docx` ? <Spinner size="sm"/> : <><FileDown size={13}/> DOCX</>}
                         </Button>
                       </>
                     )}

@@ -113,7 +113,7 @@ export const judgmentsAPI = {
 // ── Documents ────────────────────────────────────────────────
 export const docsAPI = {
   generate: (case_id: string, doc_type: string, language = 'en') =>
-    isDemoMode() ? demoDocsAPI.generate(case_id, doc_type) : api.post('/documents/generate', { case_id, doc_type, language }),
+    isDemoMode() ? demoDocsAPI.generate(case_id, doc_type, language) : api.post('/documents/generate', { case_id, doc_type, language }),
   listForCase: (case_id: string) => isDemoMode() ? demoDocsAPI.listForCase(case_id) : api.get(`/documents/by-case/${case_id}`),
   exportPdf: (doc_id: string) => isDemoMode() ? demoDocsAPI.exportPdf() : api.get(`/documents/${doc_id}/export/pdf`, { responseType: 'blob' }),
   exportDocx: (doc_id: string) => isDemoMode() ? demoDocsAPI.exportDocx() : api.get(`/documents/${doc_id}/export/docx`, { responseType: 'blob' }),

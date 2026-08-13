@@ -19,6 +19,7 @@ import {
   getDemoOverview, getDemoCrimeDistribution, getDemoWeeklyTrend, getDemoDocumentStats,
   getDemoFullAnalysis, getDemoCyberAnalysis, getDemoChatReply, getDemoJudgmentSearch,
 } from './mockData'
+import { translateDemoDocument } from './translate'
 
 // ── Cases ────────────────────────────────────────────────────
 export const demoCasesAPI = {
@@ -68,11 +69,12 @@ export const demoJudgmentsAPI = {
 // ── Documents ────────────────────────────────────────────────
 export const demoDocsAPI = {
   listForCase: (caseId: string) => demoResponse(getDemoDocuments(decodeURIComponent(caseId))),
-  generate: (case_id: string, doc_type: string) => {
+  generate: (case_id: string, doc_type: string, language = 'en') => {
     const docs = getDemoDocuments(case_id)
     const existing = docs.find(d => d.doc_type === doc_type)
-    if (existing) return demoResponse(existing, 900)
-    return blockDemoMutation('This document type has no pre-generated demo content for this case. Try a case with a later status (Chargesheet/Court/Closed) for the full document set.')
+    if (!existing) return blockDemoMutation('This document type has no pre-generated demo content for this case. Try a case with a later status (Chargesheet/Court/Closed) for the full document set.')
+    const translated = language === 'en' ? existing : { ...existing, content_html: translateDemoDocument(existing.content_html, language) }
+    return demoResponse(translated, 900)
   },
   exportPdf: () => blockDemoMutation('PDF export is disabled in the demo — view the full content in the preview pane.'),
   exportDocx: () => blockDemoMutation('DOCX export is disabled in the demo — view the full content in the preview pane.'),
