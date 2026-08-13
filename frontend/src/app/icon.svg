@@ -1,0 +1,41 @@
+<svg
+  width="64"
+  height="64"
+  viewBox="0 0 64 64"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <defs>
+    <linearGradient id="crimegpt-icon-grad" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#3b82f6" />
+      <stop offset="100%" stop-color="#8b5cf6" />
+    </linearGradient>
+  </defs>
+
+  <rect width="64" height="64" rx="14" fill="#09090b" />
+
+  <!-- Outer hex shield -->
+  <path
+    d="M32 6 L54 18.5 V43.5 L32 56 L10 43.5 V18.5 Z"
+    stroke="url(#crimegpt-icon-grad)"
+    stroke-width="3"
+    fill="rgba(59,130,246,0.12)"
+  />
+
+  <!-- Circuit nodes -->
+  <path d="M21 25 H27 M37 25 H43" stroke="url(#crimegpt-icon-grad)" stroke-width="1.8" stroke-linecap="round" />
+  <circle cx="21" cy="25" r="2.2" fill="#3b82f6" />
+  <circle cx="43" cy="25" r="2.2" fill="#8b5cf6" />
+
+  <!-- Central scan-eye -->
+  <path
+    d="M19 34c4-5.5 9-8 13-8s9 2.5 13 8c-4 5.5-9 8-13 8s-9-2.5-13-8Z"
+    stroke="url(#crimegpt-icon-grad)"
+    stroke-width="2.2"
+  />
+  <circle cx="32" cy="34" r="4.8" fill="url(#crimegpt-icon-grad)" />
+  <circle cx="32" cy="34" r="1.7" fill="#09090b" />
+
+  <!-- Base circuit line -->
+  <path d="M25 46 H39" stroke="url(#crimegpt-icon-grad)" stroke-width="1.8" stroke-linecap="round" opacity="0.7" />
+</svg>
