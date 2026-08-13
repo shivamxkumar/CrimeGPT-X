@@ -8,12 +8,14 @@ import { CaseListItem, CRIME_CATEGORY_LABELS } from '@/types'
 import Link from 'next/link'
 import { Search, Plus } from 'lucide-react'
 import { formatCurrency, formatDate, caseHref } from '@/lib/utils'
+import { useT } from '@/lib/i18n'
 
 const STATUS_OPTIONS = ['','registered','active','in_review','chargesheet','court','closed']
 const CATEGORY_OPTIONS = ['','upi_fraud','phishing','investment_scam','whatsapp_fraud','social_media','otp_fraud','fake_app','sextortion','ransomware','other']
 const PRIORITY_OPTIONS = ['','critical','high','medium','low']
 
 export default function CasesPage() {
+  const t = useT()
   const [q, setQ] = useState('')
   const [status, setStatus] = useState('')
   const [category, setCategory] = useState('')
@@ -35,8 +37,8 @@ export default function CasesPage() {
 
   return (
     <AppShell>
-      <PageHeader title="Case Registry" subtitle="All investigations — Ahmedabad Cyber Crime Branch">
-        <Link href="/cases/new"><Button size="sm"><Plus size={14}/>Register New Case</Button></Link>
+      <PageHeader title={t('cases.title')} subtitle={t('cases.subtitle', { branch: 'Ahmedabad Cyber Crime Branch' })}>
+        <Link href="/cases/new"><Button size="sm"><Plus size={14}/>{t('cases.registerNewCase')}</Button></Link>
       </PageHeader>
 
       {/* Filters */}

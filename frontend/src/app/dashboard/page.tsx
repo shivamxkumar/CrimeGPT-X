@@ -12,6 +12,7 @@ import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import { motion } from 'framer-motion'
 import { FolderKanban, Clock3, Archive, FileCheck2, FilePlus2, FileText, ShieldCheck, ArrowRight } from 'lucide-react'
+import { useT } from '@/lib/i18n'
 
 const DashboardCharts = dynamic(() => import('@/components/charts/DashboardCharts'), {
   ssr: false,
@@ -32,6 +33,7 @@ const QUICK_ACTIONS = [
 export default function DashboardPage() {
   const { user } = useAuthStore()
   const router = useRouter()
+  const t = useT()
   const { data: stats } = useQuery({ queryKey:['case-stats'], queryFn: ()=>casesAPI.stats().then(r=>r.data) })
   const { data: casesData, isLoading: casesLoading } = useQuery({ queryKey:['recent-cases'], queryFn:()=>casesAPI.list({limit:5}).then(r=>r.data) })
   const { data: overview } = useQuery({ queryKey:['analytics-overview'], queryFn: ()=>analyticsAPI.overview().then(r=>r.data) })
@@ -59,13 +61,13 @@ export default function DashboardPage() {
   return (
     <AppShell>
       <PageHeader
-        title="Command Dashboard"
-        subtitle={`Ahmedabad Cyber Crime Branch · Welcome back, ${user?.name}`}
+        title={t('dashboard.title')}
+        subtitle={t('dashboard.subtitle', { branch: 'Ahmedabad Cyber Crime Branch', name: user?.name || '' })}
       >
         <span className="badge-green flex items-center gap-1 text-[11px]">
           <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />LIVE
         </span>
-        <Link href="/cases/new"><Button size="sm">+ New Case</Button></Link>
+        <Link href="/cases/new"><Button size="sm">{t('dashboard.newCase')}</Button></Link>
       </PageHeader>
 
       {/* Stats */}

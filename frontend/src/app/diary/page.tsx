@@ -7,8 +7,10 @@ import { motion } from 'framer-motion'
 import { Lock, CalendarClock, Send, StickyNote } from 'lucide-react'
 import { entryStyle } from '@/lib/diaryStyles'
 import { useAuthStore } from '@/lib/store'
+import { useT } from '@/lib/i18n'
 
 export default function DiaryPage() {
+  const t = useT()
   const isDemoMode = useAuthStore(s => s.isDemoMode)
   const { selectedCaseId, cases, isLoading: casesLoading } = useSelectedCase()
   const { data: entries, isLoading, isError } = useDiary(selectedCaseId || '')
@@ -20,7 +22,7 @@ export default function DiaryPage() {
 
   return (
     <AppShell>
-      <PageHeader title={selectedCaseId ? `Case Diary — ${selectedCaseId}` : 'Case Diary'} subtitle="Automated investigation timeline & audit trail">
+      <PageHeader title={selectedCaseId ? t('diary.titleCase', { id: selectedCaseId }) : t('diary.title')} subtitle={t('diary.subtitle')}>
         <CaseSelector />
       </PageHeader>
 

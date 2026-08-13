@@ -14,6 +14,7 @@ import toast from 'react-hot-toast'
 import Link from 'next/link'
 import { useAuthStore } from '@/lib/store'
 import DemoDisabledNotice from '@/components/layout/DemoDisabledNotice'
+import { useT } from '@/lib/i18n'
 
 interface ExtractedFields { fir_number?:string; date?:string; complainant_name?:string; phone?:string; address?:string; amount?:string; accused_name?:string; police_station?:string }
 
@@ -30,6 +31,7 @@ const FIELD_META: Record<string, { icon: LucideIcon; color: string }> = {
 const OCR_STEPS = ['Scanning document layout...', 'Running text recognition...', 'Extracting structured fields...', 'Scoring extraction confidence...']
 
 export default function FIRPage() {
+  const t = useT()
   const isDemoMode = useAuthStore(s => s.isDemoMode)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -81,7 +83,7 @@ export default function FIRPage() {
   if (isDemoMode) {
     return (
       <AppShell>
-        <PageHeader title="FIR Upload & OCR Extraction" subtitle="Upload FIR — real OCR extracts fields from the document" />
+        <PageHeader title={t('fir.title')} subtitle={t('fir.subtitle')} />
         <DemoDisabledNotice feature="FIR upload" />
       </AppShell>
     )
@@ -89,7 +91,7 @@ export default function FIRPage() {
 
   return (
     <AppShell>
-      <PageHeader title="FIR Upload & OCR Extraction" subtitle="Upload FIR — real OCR extracts fields from the document" />
+      <PageHeader title={t('fir.title')} subtitle={t('fir.subtitle')} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* Left: Original document preview / dropzone */}

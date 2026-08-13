@@ -15,52 +15,53 @@ import type { LucideIcon } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
 import { Tooltip } from '@/components/ui/Tooltip'
 import { Logo } from '@/components/ui/Logo'
+import { useT, type TranslationKey } from '@/lib/i18n'
 
 interface NavItem {
   href: string
   icon: LucideIcon
-  label: string
+  labelKey: TranslationKey
   badge?: string
   roles?: string[]
   hideInDemo?: boolean
 }
 
-const navGroups: { label: string | null; items: NavItem[] }[] = [
+const navGroups: { labelKey: TranslationKey | null; items: NavItem[] }[] = [
   {
-    label: null,
+    labelKey: null,
     items: [
-      { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+      { href: '/dashboard', icon: LayoutDashboard, labelKey: 'nav.dashboard' },
     ],
   },
   {
-    label: 'Investigation',
+    labelKey: 'nav.groupInvestigation',
     items: [
-      { href: '/cases',     icon: FolderOpen, label: 'All Cases' },
-      { href: '/cases/new', icon: FilePlus,   label: 'New Case', hideInDemo: true },
-      { href: '/fir',       icon: FileText,   label: 'FIR Upload & OCR', hideInDemo: true },
+      { href: '/cases',     icon: FolderOpen, labelKey: 'nav.allCases' },
+      { href: '/cases/new', icon: FilePlus,   labelKey: 'nav.newCase', hideInDemo: true },
+      { href: '/fir',       icon: FileText,   labelKey: 'nav.firUpload', hideInDemo: true },
     ],
   },
   {
-    label: 'AI Intelligence',
+    labelKey: 'nav.groupAiIntelligence',
     items: [
-      { href: '/legal',     icon: Shield,  label: 'AI Legal Analysis' },
-      { href: '/judgments', icon: Search,  label: 'Legal Search' },
-      { href: '/cyber',     icon: Monitor, label: 'Cyber Detection' },
+      { href: '/legal',     icon: Shield,  labelKey: 'nav.aiLegalAnalysis' },
+      { href: '/judgments', icon: Search,  labelKey: 'nav.legalSearch' },
+      { href: '/cyber',     icon: Monitor, labelKey: 'nav.cyberDetection' },
     ],
   },
   {
-    label: 'Evidence & Reports',
+    labelKey: 'nav.groupEvidenceReports',
     items: [
-      { href: '/evidence',  icon: Archive,   label: 'Evidence' },
-      { href: '/documents', icon: BookOpen,  label: 'Reports & Documents' },
-      { href: '/diary',     icon: Calendar,  label: 'Case Diary / Timeline' },
+      { href: '/evidence',  icon: Archive,   labelKey: 'nav.evidence' },
+      { href: '/documents', icon: BookOpen,  labelKey: 'nav.reportsDocuments' },
+      { href: '/diary',     icon: Calendar,  labelKey: 'nav.caseDiary' },
     ],
   },
   {
-    label: 'Command',
+    labelKey: 'nav.groupCommand',
     items: [
-      { href: '/analytics', icon: BarChart2, label: 'Analytics' },
-      { href: '/admin',     icon: Users,     label: 'Admin Panel', roles: ['admin','sho'] },
+      { href: '/analytics', icon: BarChart2, labelKey: 'nav.analytics' },
+      { href: '/admin',     icon: Users,     labelKey: 'nav.adminPanel', roles: ['admin','sho'] },
     ],
   },
 ]
@@ -73,6 +74,7 @@ interface SidebarProps {
 export default function Sidebar({ open, onClose }: SidebarProps) {
   const pathname = usePathname()
   const { user, logout, isDemoMode } = useAuthStore()
+  const t = useT()
   const [collapsed, setCollapsed] = useState(false)
   const { data: caseStats } = useQuery({
     queryKey: ['case-stats'],
@@ -99,6 +101,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
     const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
     const Icon = item.icon
     const badge = item.badge || badges[item.href]
+    const label = t(item.labelKey)
     const link = (
       <Link
         key={item.href}
@@ -107,7 +110,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
         className={cn('nav-link', collapsed && 'justify-center px-0', isActive && 'active')}
       >
         <Icon size={16} className={isActive ? 'text-accent-blue' : 'text-text-muted'} />
-        {!collapsed && <span className="flex-1 truncate">{item.label}</span>}
+        {!collapsed && <span className="flex-1 truncate">{label}</span>}
         {!collapsed && badge && (
           <span className="bg-accent-red text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
             {badge}
@@ -115,7 +118,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
         )}
       </Link>
     )
-    return collapsed ? <Tooltip key={item.href} content={item.label} side="right">{link}</Tooltip> : link
+    return collapsed ? <Tooltip key={item.href} content={label} side="right">{link}</Tooltip> : link
   }
 
   return (
@@ -142,7 +145,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
           {!collapsed && (
             <div className="min-w-0">
               <div className="text-sm font-bold tracking-tight leading-tight truncate">CrimeGPT-X</div>
-              <div className="text-[9px] text-text-muted tracking-widest uppercase truncate">Police Intelligence Platform</div>
+              <div className="text-[9px] text-text-muted tracking-widest uppercase truncate">{t('nav.tagline')}</div>
             </div>
           )}
         </div>
@@ -150,9 +153,9 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
         <nav className="flex flex-col flex-1 px-2 py-3 gap-0.5 overflow-y-auto">
           {navGroups.map((group, gi) => (
             <div key={gi} className="mb-1">
-              {group.label && !collapsed && (
+              {group.labelKey && !collapsed && (
                 <div className="px-2.5 py-1.5 text-[10px] font-semibold text-text-muted uppercase tracking-widest">
-                  {group.label}
+                  {t(group.labelKey)}
                 </div>
               )}
               {group.items.map(renderLink)}
@@ -163,15 +166,15 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
         {/* Collapse toggle (desktop only) */}
         <button
           onClick={toggleCollapsed}
-          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          aria-label={collapsed ? t('nav.expandSidebar') : t('nav.collapseSidebar')}
           className="hidden md:flex items-center justify-center gap-2 mx-2 mb-2 py-2 rounded-xl text-text-muted hover:text-text-primary hover:bg-white/[0.05] transition-all text-xs font-medium"
         >
-          {collapsed ? <ChevronsRight size={15} /> : <><ChevronsLeft size={15} /> Collapse</>}
+          {collapsed ? <ChevronsRight size={15} /> : <><ChevronsLeft size={15} /> {t('nav.collapse')}</>}
         </button>
 
         {/* Settings + user + logout at bottom */}
         <div className={cn('p-3 border-t border-white/[0.06]', collapsed && 'px-2')}>
-          {renderLink({ href: '/settings', icon: Settings, label: 'Settings' })}
+          {renderLink({ href: '/settings', icon: Settings, labelKey: 'nav.settings' })}
 
           <div className={cn('flex items-center gap-2.5 mt-2 mb-2', collapsed && 'justify-center')}>
             <Avatar name={user?.name} size="sm" />
@@ -183,15 +186,15 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
             )}
           </div>
           {collapsed ? (
-            <Tooltip content="Sign Out" side="right">
-              <button onClick={logout} aria-label="Sign Out" className="nav-link w-full justify-center px-0 text-text-muted hover:text-accent-red">
+            <Tooltip content={t('nav.signOut')} side="right">
+              <button onClick={logout} aria-label={t('nav.signOut')} className="nav-link w-full justify-center px-0 text-text-muted hover:text-accent-red">
                 <LogOut size={14} />
               </button>
             </Tooltip>
           ) : (
             <button onClick={logout} className="nav-link w-full text-xs text-text-muted hover:text-accent-red">
               <LogOut size={14} />
-              Sign Out
+              {t('nav.signOut')}
             </button>
           )}
         </div>

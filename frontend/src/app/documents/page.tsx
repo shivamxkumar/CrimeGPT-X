@@ -8,6 +8,7 @@ import { useAuthStore } from '@/lib/store'
 import { DOC_TYPE_LABELS, Document } from '@/types'
 import { Scale, Landmark, HeartPulse, Package, UserCheck, ScanFace, FileClock, Link2, Zap, Eye, Sparkles, Download, FileDown, X, FileCheck, Languages } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { useT } from '@/lib/i18n'
 
 const LANGUAGES = [
   { code: 'en', label: 'English' },
@@ -36,6 +37,7 @@ function downloadBlob(blob: Blob, filename: string) {
 }
 
 export default function DocumentsPage() {
+  const t = useT()
   const { selectedCaseId, cases, isLoading: casesLoading } = useSelectedCase()
   const isDemoMode = useAuthStore(s => s.isDemoMode)
   const [generating, setGenerating] = useState<string | null>(null)
@@ -109,10 +111,10 @@ export default function DocumentsPage() {
 
   return (
     <AppShell>
-      <PageHeader title="Document Generation Engine" subtitle={selectedCaseId ? `Case ${selectedCaseId} — AI auto-populates all fields from case data` : 'Select a case to generate documents'}>
+      <PageHeader title={t('documents.title')} subtitle={selectedCaseId ? t('documents.subtitleCase', { id: selectedCaseId }) : t('documents.subtitleEmpty')}>
         <CaseSelector />
         <Button onClick={generateAll} disabled={!!generating || !selectedCaseId} loading={!!generating}>
-          {!generating && <Zap size={14} />} Generate All (8 Docs)
+          {!generating && <Zap size={14} />} {t('documents.generateAll')}
         </Button>
       </PageHeader>
 
@@ -128,7 +130,7 @@ export default function DocumentsPage() {
 
       <div className="flex items-center gap-2 mb-1">
         <Languages size={14} className="text-text-secondary" />
-        <span className="text-xs text-text-secondary mr-1">Document language:</span>
+        <span className="text-xs text-text-secondary mr-1">{t('documents.languageLabel')}</span>
         <div className="flex gap-1">
           {LANGUAGES.map(l => (
             <button

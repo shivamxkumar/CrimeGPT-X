@@ -7,6 +7,7 @@ import { User, Lock, Bell, ShieldCheck } from 'lucide-react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import toast from 'react-hot-toast'
+import { useT } from '@/lib/i18n'
 
 interface NotificationPrefs { email: boolean; sms: boolean; push: boolean; deadlineAlerts: boolean }
 const DEFAULT_PREFS: NotificationPrefs = { email: true, sms: false, push: true, deadlineAlerts: true }
@@ -36,6 +37,7 @@ function Toggle({ checked, onChange, label, description }: { checked: boolean; o
 }
 
 export default function SettingsPage() {
+  const t = useT()
   const { user } = useAuthStore()
   const isAdmin = user?.role === 'admin' || user?.role === 'sho'
   const [prefs, setPrefs] = useState<NotificationPrefs>(DEFAULT_PREFS)
@@ -67,7 +69,7 @@ export default function SettingsPage() {
 
   return (
     <AppShell>
-      <PageHeader title="Settings" subtitle="Manage your profile, security, and notification preferences" />
+      <PageHeader title={t('settings.title')} subtitle={t('settings.subtitle')} />
 
       <Tabs defaultValue="profile">
         <TabsList className="mb-5 flex-wrap">

@@ -4,10 +4,12 @@ import { PageHeader, Alert, EmptyState, Button, Tabs, TabsList, TabsTrigger, AIT
 import { useState } from 'react'
 import { aiAPI } from '@/lib/api'
 import { ScanSearch } from 'lucide-react'
+import { useT } from '@/lib/i18n'
 
 type Tab = 'url' | 'chat' | 'email' | 'phone'
 
 export default function CyberPage() {
+  const t = useT()
   const [activeTab, setActiveTab] = useState<Tab>('url')
   const [content, setContent] = useState('')
   const [analyzing, setAnalyzing] = useState(false)
@@ -33,7 +35,7 @@ export default function CyberPage() {
 
   return (
     <AppShell>
-      <PageHeader title="Cyber Crime Detection Engine" subtitle="AI-powered pattern detection for digital fraud" />
+      <PageHeader title={t('cyber.title')} subtitle={t('cyber.subtitle')} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <div className="card">

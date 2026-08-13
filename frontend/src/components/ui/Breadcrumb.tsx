@@ -3,25 +3,27 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { ChevronRight, Home } from 'lucide-react'
 import { Fragment } from 'react'
+import { useT, type TranslationKey } from '@/lib/i18n'
 
-const LABELS: Record<string, string> = {
-  dashboard: 'Dashboard',
-  cases: 'Cases',
-  new: 'New Case',
-  fir: 'FIR Upload & OCR',
-  legal: 'AI Legal Analysis',
-  judgments: 'Legal Search',
-  evidence: 'Evidence',
-  documents: 'Reports & Documents',
-  diary: 'Case Diary',
-  analytics: 'Analytics',
-  cyber: 'Cyber Detection',
-  admin: 'Admin',
-  settings: 'Settings',
+const LABEL_KEYS: Record<string, TranslationKey> = {
+  dashboard: 'nav.dashboard',
+  cases: 'nav.allCases',
+  new: 'nav.newCase',
+  fir: 'nav.firUpload',
+  legal: 'nav.aiLegalAnalysis',
+  judgments: 'nav.legalSearch',
+  evidence: 'nav.evidence',
+  documents: 'nav.reportsDocuments',
+  diary: 'nav.caseDiary',
+  analytics: 'nav.analytics',
+  cyber: 'nav.cyberDetection',
+  admin: 'nav.adminPanel',
+  settings: 'nav.settings',
 }
 
 export function Breadcrumb() {
   const pathname = usePathname()
+  const t = useT()
   const segments = pathname.split('/').filter(Boolean)
 
   if (segments.length === 0) return null
@@ -32,7 +34,8 @@ export function Breadcrumb() {
       {segments.map((seg, i) => {
         const href = '/' + segments.slice(0, i + 1).join('/')
         const isLast = i === segments.length - 1
-        const label = LABELS[seg] || decodeURIComponent(seg)
+        const labelKey = LABEL_KEYS[seg]
+        const label = labelKey ? t(labelKey) : decodeURIComponent(seg)
         return (
           <Fragment key={href}>
             <ChevronRight size={12} className="flex-shrink-0 opacity-50" />

@@ -7,6 +7,7 @@ import { adminAPI } from '@/lib/api'
 import { formatDateTime } from '@/lib/utils'
 import { Shield, Activity, Settings, Users } from 'lucide-react'
 import Link from 'next/link'
+import { useT } from '@/lib/i18n'
 
 type AdminTab = 'users' | 'audit' | 'config' | 'system'
 
@@ -19,6 +20,7 @@ const actionColor: Record<string, string> = {
 }
 
 export default function AdminPage() {
+  const t = useT()
   const [tab, setTab] = useState<AdminTab>('users')
 
   const { data: users, isLoading: usersLoading, isError: usersError } = useQuery({
@@ -44,7 +46,7 @@ export default function AdminPage() {
 
   return (
     <AppShell>
-      <PageHeader title="Administration Panel" subtitle="User management, audit logs, system configuration" />
+      <PageHeader title={t('admin.title')} subtitle={t('admin.subtitle')} />
 
       {/* Tabs */}
       <Tabs value={tab} onValueChange={v => setTab(v as AdminTab)}>

@@ -9,11 +9,13 @@ import toast from 'react-hot-toast'
 import { ChevronRight, User, AlertTriangle, FileText } from 'lucide-react'
 import { useAuthStore } from '@/lib/store'
 import DemoDisabledNotice from '@/components/layout/DemoDisabledNotice'
+import { useT } from '@/lib/i18n'
 
 const STEP_LABELS = ['Case Info', 'Victim', 'Accused', 'Incident', 'Review']
 
 export default function NewCasePage() {
   const router = useRouter()
+  const t = useT()
   const isDemoMode = useAuthStore(s => s.isDemoMode)
   const [step, setStep] = useState(0)
   const [submitting, setSubmitting] = useState(false)
@@ -67,7 +69,7 @@ export default function NewCasePage() {
   if (isDemoMode) {
     return (
       <AppShell>
-        <PageHeader title="Register New Case" subtitle="Single entry — all documents auto-populate from this data" />
+        <PageHeader title={t('casesNew.title')} subtitle={t('casesNew.subtitle')} />
         <DemoDisabledNotice feature="Case registration" />
       </AppShell>
     )
@@ -75,9 +77,9 @@ export default function NewCasePage() {
 
   return (
     <AppShell>
-      <PageHeader title="Register New Case" subtitle="Single entry — all documents auto-populate from this data">
+      <PageHeader title={t('casesNew.title')} subtitle={t('casesNew.subtitle')}>
         <span className="font-mono text-sm text-accent-cyan bg-bg-card2 px-3 py-1 rounded-lg border border-white/[0.07]">
-          Auto ID: CC/2024/0849
+          {t('casesNew.autoId')} CC/2024/0849
         </span>
       </PageHeader>
 

@@ -7,12 +7,14 @@ import { motion } from 'framer-motion'
 import { aiAPI, casesAPI } from '@/lib/api'
 import { AIAnalysisResult } from '@/types'
 import { Send, Shield, MessageSquare, Sparkles, Download, TriangleAlert, CheckCircle2, Quote } from 'lucide-react'
+import { useT } from '@/lib/i18n'
 
 interface Message { role: 'user' | 'assistant'; content: string }
 
 const riskColors: Record<string, string> = { low: '#22c55e', medium: '#f59e0b', high: '#ef4444', critical: '#dc2626' }
 
 export default function LegalAIPage() {
+  const t = useT()
   const { selectedCaseId, isLoading: casesLoading } = useSelectedCase()
   const { data: selectedCase } = useQuery({
     queryKey: ['case', selectedCaseId],
@@ -119,7 +121,7 @@ export default function LegalAIPage() {
 
   return (
     <AppShell>
-      <PageHeader title="AI Legal Intelligence Engine" subtitle={selectedCase ? `Case ${selectedCase.case_id} — ${selectedCase.victim_name}` : 'Select a case, or analyze free-form FIR text'}>
+      <PageHeader title={t('legal.title')} subtitle={selectedCase ? `Case ${selectedCase.case_id} — ${selectedCase.victim_name}` : t('legal.subtitleDefault')}>
         <CaseSelector />
         <span className="badge-cyan">Gemini Powered</span>
       </PageHeader>

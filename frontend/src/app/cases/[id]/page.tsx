@@ -10,9 +10,11 @@ import { CRIME_CATEGORY_LABELS, CaseStatus, CasePriority } from '@/types'
 import Link from 'next/link'
 import { formatCurrency, formatDate, formatDateTime } from '@/lib/utils'
 import { useAuthStore } from '@/lib/store'
+import { useT } from '@/lib/i18n'
 
 export default function CaseDetailPage() {
   const { id } = useParams<{ id: string }>()
+  const t = useT()
   const isDemoMode = useAuthStore(s => s.isDemoMode)
   const { data: c, isLoading, isError } = useQuery({
     queryKey: ['case', id],
@@ -33,7 +35,7 @@ export default function CaseDetailPage() {
       <PageHeader title={`Case ${c.case_id}`} subtitle={`${CRIME_CATEGORY_LABELS[c.crime_category as keyof typeof CRIME_CATEGORY_LABELS]} · ${c.police_station}`}>
         <StatusBadge status={c.status as any} />
         <PriorityBadge priority={c.priority as any} />
-        <Link href="/legal"><Button size="sm">🤖 AI Legal Analysis</Button></Link>
+        <Link href="/legal"><Button size="sm">🤖 {t('caseDetail.aiLegalAnalysis')}</Button></Link>
       </PageHeader>
 
       {/* Quick stats */}

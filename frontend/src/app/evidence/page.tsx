@@ -11,6 +11,7 @@ import { Upload, Lock, CheckCircle, AlertTriangle, Download, Trash2, Search, Har
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/lib/store'
 import toast from 'react-hot-toast'
+import { useT } from '@/lib/i18n'
 
 const typeIcons: Record<string,string> = {
   image:'🖼️',video:'🎬',audio:'🎵',pdf:'📄',document:'📝',screenshot:'📸',chat_export:'💬',bank_statement:'🏦',other:'📁'
@@ -68,6 +69,7 @@ function EvidencePreview({ evidence }: { evidence: Evidence }) {
 }
 
 export default function EvidencePage() {
+  const t = useT()
   const isDemoMode = useAuthStore(s => s.isDemoMode)
   const { selectedCaseId, cases, isLoading: casesLoading } = useSelectedCase()
   const { data: evidence, isLoading, isError } = useEvidence(selectedCaseId || '')
@@ -119,7 +121,7 @@ export default function EvidencePage() {
 
   return (
     <AppShell>
-      <PageHeader title="Digital Evidence Vault" subtitle={selectedCaseId ? `Case ${selectedCaseId} — SHA-256 verified, chain of custody maintained` : 'Select a case to view its evidence'}>
+      <PageHeader title={t('evidence.title')} subtitle={selectedCaseId ? t('evidence.subtitleCase', { id: selectedCaseId }) : t('evidence.subtitleEmpty')}>
         <CaseSelector />
         <span className="badge-blue">{list.length} files</span>
       </PageHeader>

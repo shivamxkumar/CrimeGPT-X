@@ -1,11 +1,12 @@
 'use client'
-import { Bell, Search, Menu, ChevronDown, LogOut, Settings, User as UserIcon } from 'lucide-react'
+import { Bell, Search, Menu, ChevronDown, LogOut, Settings, User as UserIcon, Languages, Check } from 'lucide-react'
 import { useAuthStore } from '@/lib/store'
 import { useState } from 'react'
 import Link from 'next/link'
 import { Breadcrumb } from '@/components/ui/Breadcrumb'
 import { Avatar } from '@/components/ui/Avatar'
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuLabel } from '@/components/ui/Menu'
+import { useT, useLanguageStore, LANGUAGES } from '@/lib/i18n'
 
 interface TopbarProps {
   onMenuClick: () => void
@@ -14,6 +15,8 @@ interface TopbarProps {
 export default function Topbar({ onMenuClick }: TopbarProps) {
   const { user, logout } = useAuthStore()
   const [notifOpen, setNotifOpen] = useState(false)
+  const t = useT()
+  const { language, setLanguage } = useLanguageStore()
 
   return (
     <header className="h-16 flex-shrink-0 flex items-center px-3 md:px-5 gap-3 md:gap-4 glass border-b border-white/[0.06] z-30">
@@ -33,9 +36,31 @@ export default function Topbar({ onMenuClick }: TopbarProps) {
       {/* Search */}
       <button className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-bg-card border border-white/[0.06] text-text-muted text-xs hover:border-white/[0.14] transition-all">
         <Search size={13} />
-        <span>Search cases...</span>
+        <span>{t('common.searchPlaceholder')}</span>
         <span className="ml-2 font-mono text-[10px] opacity-50">⌘K</span>
       </button>
+
+      {/* Language */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-white/[0.06] text-text-secondary transition-all"
+            aria-label={t('common.language')}
+          >
+            <Languages size={17} />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent>
+          <DropdownMenuLabel>{t('common.language')}</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          {LANGUAGES.map(l => (
+            <DropdownMenuItem key={l.code} onClick={() => setLanguage(l.code)}>
+              <span className="flex-1">{l.label}</span>
+              {language === l.code && <Check size={14} className="text-accent-blue" />}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       {/* Notifications */}
       <div className="relative">
@@ -50,7 +75,7 @@ export default function Topbar({ onMenuClick }: TopbarProps) {
 
         {notifOpen && (
           <div className="absolute right-0 top-11 w-[min(20rem,calc(100vw-1.5rem))] glass rounded-xl2 shadow-soft z-50 overflow-hidden animate-scale-in">
-            <div className="p-3 border-b border-white/[0.06] font-semibold text-sm">Notifications</div>
+            <div className="p-3 border-b border-white/[0.06] font-semibold text-sm">{t('common.notifications')}</div>
             {[
               { icon: '⏰', title: 'Remand deadline — CC/2024/0839', body: 'Court submission due in 48 hours', time: '2h ago', color: 'text-amber-400' },
               { icon: '✅', title: 'Chargesheet ready — CC/2024/0847', body: 'AI generated, pending review', time: '3h ago', color: 'text-green-400' },
@@ -82,17 +107,17 @@ export default function Topbar({ onMenuClick }: TopbarProps) {
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent>
-          <DropdownMenuLabel>Signed in as {user?.name}</DropdownMenuLabel>
+          <DropdownMenuLabel>{t('common.signedInAs', { name: user?.name || '' })}</DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem asChild>
-            <Link href="/settings"><UserIcon size={14} /> Profile</Link>
+            <Link href="/settings"><UserIcon size={14} /> {t('common.profile')}</Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
-            <Link href="/settings"><Settings size={14} /> Settings</Link>
+            <Link href="/settings"><Settings size={14} /> {t('nav.settings')}</Link>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={logout} className="text-red-400 data-[highlighted]:text-red-300">
-            <LogOut size={14} /> Sign Out
+            <LogOut size={14} /> {t('nav.signOut')}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

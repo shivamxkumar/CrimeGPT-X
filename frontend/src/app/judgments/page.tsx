@@ -6,10 +6,12 @@ import { motion } from 'framer-motion'
 import { judgmentsAPI } from '@/lib/api'
 import { Judgment } from '@/types'
 import { Search, BookOpen } from 'lucide-react'
+import { useT } from '@/lib/i18n'
 
 const SEARCH_STEPS = ['Embedding your query...', 'Searching the judgments corpus...', 'Ranking by legal relevance...']
 
 export default function JudgmentsPage() {
+  const t = useT()
   const [query, setQuery] = useState('')
   const [searching, setSearching] = useState(false)
   const [results, setResults] = useState<Judgment[] | null>(null)
@@ -35,7 +37,7 @@ export default function JudgmentsPage() {
 
   return (
     <AppShell>
-      <PageHeader title="Landmark Judgment Search" subtitle="RAG-powered semantic search across an ingested corpus of real Indian case law">
+      <PageHeader title={t('judgments.title')} subtitle={t('judgments.subtitle')}>
         <span className="badge-purple">⚡ RAG Engine</span>
       </PageHeader>
 

@@ -4,6 +4,7 @@ import { PageHeader, StatCard, Button, Skeleton } from '@/components/ui'
 import { chartColors } from '@/lib/chartTheme'
 import { Download } from 'lucide-react'
 import dynamic from 'next/dynamic'
+import { useT } from '@/lib/i18n'
 
 const chartSkeleton = <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">{[0,1].map(i => <div key={i} className="card"><Skeleton className="h-4 w-40 mb-4" /><Skeleton className="h-[200px] w-full" /></div>)}</div>
 const MonthlyTrendCharts = dynamic(() => import('@/components/charts/AnalyticsCharts').then(m => m.MonthlyTrendCharts), { ssr: false, loading: () => chartSkeleton })
@@ -26,13 +27,14 @@ const topSections = [
   {section:'BNSS 180',count:34},{section:'BSA 63',count:28},
 ]
 export default function AnalyticsPage() {
+  const t = useT()
   return (
     <AppShell>
-      <PageHeader title="Analytics & Intelligence" subtitle="Department-level statistics — Ahmedabad Cyber Crime Branch">
+      <PageHeader title={t('analytics.title')} subtitle={t('analytics.subtitle', { branch: 'Ahmedabad Cyber Crime Branch' })}>
         <select className="input text-xs w-36 py-1.5">
           <option>Last 30 Days</option><option>Last 90 Days</option><option>This Year</option>
         </select>
-        <Button variant="secondary" size="sm"><Download size={13} /> Export Report</Button>
+        <Button variant="secondary" size="sm"><Download size={13} /> {t('analytics.exportReport')}</Button>
       </PageHeader>
 
       {/* KPIs */}
