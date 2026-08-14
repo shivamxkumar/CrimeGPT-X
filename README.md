@@ -1,6 +1,35 @@
-# 🔍 CrimeGPT-X — AI-Powered Crime Documentation & Legal Intelligence Platform
+<div align="center">
 
-> **"From FIR to Arrest — One Intelligent Investigation Platform"**
+# 🔍 CrimeGPT-X
+### AI-Powered Crime Documentation & Legal Intelligence Platform
+
+**"From FIR to Arrest — One Intelligent Investigation Platform"**
+
+<br/>
+
+[![Python](https://img.shields.io/badge/Python_3.12-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![Next.js](https://img.shields.io/badge/Next.js_14-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![TailwindCSS](https://img.shields.io/badge/TailwindCSS-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
+
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Redis](https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white)](https://redis.io/)
+[![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
+[![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy_2.0-D71F00?style=for-the-badge&logoColor=white)](https://www.sqlalchemy.org/)
+[![Pydantic](https://img.shields.io/badge/Pydantic_v2-E92063?style=for-the-badge&logo=pydantic&logoColor=white)](https://docs.pydantic.dev/)
+
+[![Google Gemini](https://img.shields.io/badge/Google_Gemini-8E75B2?style=for-the-badge&logo=googlegemini&logoColor=white)](https://ai.google.dev/)
+[![ChromaDB](https://img.shields.io/badge/ChromaDB-FF6F00?style=for-the-badge&logoColor=white)](https://www.trychroma.com/)
+[![JWT](https://img.shields.io/badge/JWT_Auth-000000?style=for-the-badge&logo=jsonwebtokens&logoColor=white)](https://jwt.io/)
+
+[![Vercel](https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://vercel.com/)
+[![Render](https://img.shields.io/badge/Render-46E3B7?style=for-the-badge&logo=render&logoColor=white)](https://render.com/)
+[![Neon](https://img.shields.io/badge/Neon_Postgres-00E599?style=for-the-badge&logo=neon&logoColor=white)](https://neon.tech/)
+[![Cloudflare R2](https://img.shields.io/badge/Cloudflare_R2-F38020?style=for-the-badge&logo=cloudflare&logoColor=white)](https://developers.cloudflare.com/r2/)
+[![License](https://img.shields.io/badge/License-Proprietary-6c757d?style=for-the-badge)]()
+
+</div>
 
 ---
 
@@ -46,8 +75,8 @@ silently substitutes canned content.
 | Entity Extraction (victims/suspects/witnesses) | Google Gemini | Extracted only from text actually present in the FIR |
 | Timeline Generation | Google Gemini | Chronological reconstruction from the FIR narrative |
 | Risk Assessment | Google Gemini | Investigation urgency/risk scoring with factors |
-| FIR OCR Extraction | EasyOCR + Tesseract | Real multi-language OCR (EN/HI/GU) |
-| Landmark Judgment RAG Search | ChromaDB + Sentence Transformers | Returns real indexed judgments, or a clear empty-state message if none are ingested yet — never fabricated |
+| FIR OCR Extraction | Tesseract (default) + EasyOCR (optional) | Real multi-language OCR (EN/HI/GU) |
+| Landmark Judgment RAG Search | ChromaDB + Gemini Embeddings | Returns real indexed judgments, or a clear empty-state message if none are ingested yet — never fabricated |
 | Legal AI Chat / Question Answering | Google Gemini | Case-context-aware conversational assistant |
 | Cyber Threat Detection | Google Gemini | URL/message/email/phone pattern analysis |
 | Evidence Relevance Analysis | Google Gemini + OCR | Grounded in the evidence file's own extracted text |
@@ -82,7 +111,7 @@ silently substitutes canned content.
 ├────────┬─────────────┬─────────────┬───────────────────────────┤
 │ AI     │ OCR         │ Evidence    │ Celery Workers             │
 │ Engine │ Service     │ Service     │ (Async Tasks + Beat)       │
-│ Gemini │ EasyOCR     │ MinIO+SHA256│ AI Jobs · Notifications   │
+│ Gemini │ Tesseract   │ MinIO+SHA256│ AI Jobs · Notifications   │
 └────┬───┴──────┬──────┴─────┬───────┴───────────────────────────┘
      │          │             │
 ┌────▼──┐ ┌───▼──────┐ ┌────▼──────┐ ┌──────────┐ ┌──────────┐
@@ -110,21 +139,21 @@ silently substitutes canned content.
 ### Backend
 | Component | Technology |
 |-----------|-----------|
-| Framework | FastAPI (Python 3.12) |
+| Framework | FastAPI (Python 3.12), async throughout |
 | ORM | SQLAlchemy 2.0 (Async) |
-| Database | PostgreSQL 16 + pg_trgm |
+| Database | PostgreSQL 16 + pg_trgm (Neon, managed, in production) |
 | Migrations | Alembic |
 | Auth | JWT + bcrypt (passlib) |
-| Task Queue | Celery + Redis + Celery Beat |
+| Task Queue | Celery + Redis + Celery Beat (defined for local/Compose use) |
 | Validation | Pydantic v2 |
 
 ### AI / ML
 | Component | Technology |
 |-----------|-----------|
 | LLM | Google Gemini (`google-genai` SDK) |
-| RAG | ChromaDB + sentence-transformers (all-MiniLM-L6-v2) |
-| OCR Primary | EasyOCR (English + Hindi + Gujarati) |
-| OCR Fallback | Tesseract + pytesseract |
+| RAG | ChromaDB + Gemini Embeddings (`gemini-embedding-001`) |
+| OCR Primary | Tesseract + pytesseract (default, lightweight) |
+| OCR Optional | EasyOCR — English + Hindi + Gujarati, opt-in via `OCR_ENGINE=easyocr` |
 | PDF Export | WeasyPrint (real HTML → PDF) |
 | DOCX Export | python-docx + BeautifulSoup (real HTML → DOCX) |
 
@@ -132,9 +161,9 @@ silently substitutes canned content.
 | Component | Technology |
 |-----------|-----------|
 | Containerization | Docker + Docker Compose |
-| Object Storage | MinIO (S3-compatible; swap for AWS S3/Cloudflare R2 in prod) |
-| Cache / Broker | Redis 7 |
-| Reverse Proxy | Nginx |
+| Object Storage | MinIO client (S3-compatible) → Cloudflare R2 in production; local MinIO for dev |
+| Cache / Broker | Redis 7 (Upstash in production) |
+| Reverse Proxy | Nginx (local/Compose) |
 | Monitoring | Flower (Celery) + pgAdmin |
 
 ---
@@ -144,7 +173,7 @@ silently substitutes canned content.
 ### Prerequisites
 - Docker & Docker Compose v2+
 - Node.js 20+ (frontend dev outside Docker)
-- Python 3.12+ (backend dev outside Docker)
+- Python 3.12+ (backend dev outside Docker) — plus Tesseract if running OCR outside Docker (see step 3; the Docker image already includes it)
 - A [Gemini API key](https://aistudio.google.com/apikey)
 
 ### 1. Clone & configure
@@ -182,6 +211,11 @@ these passwords (or disable seeding) before any real deployment.
 
 ### 3. Backend outside Docker
 
+OCR runs on Tesseract by default (no heavy ML deps required). Install it first —
+macOS: `brew install tesseract tesseract-lang`; Debian/Ubuntu:
+`apt-get install tesseract-ocr tesseract-ocr-hin tesseract-ocr-guj poppler-utils`
+(the Docker image already has these baked in, see `backend/Dockerfile`).
+
 ```bash
 cd backend
 pip install -r requirements.txt
@@ -215,12 +249,12 @@ See `.env.example` for the full list with comments. The required ones:
 |----------|---------|
 | `GEMINI_API_KEY` | Google Gemini API key — every AI feature requires this |
 | `AI_MODEL` | Gemini model id (default `gemini-3.5-flash`) |
-| `DATABASE_URL` | Postgres connection string (`postgresql+asyncpg://...`) |
+| `DATABASE_URL` | Postgres connection string (`postgresql+asyncpg://...`). Hosted-provider DSNs (Neon, Supabase) with `?sslmode=require&channel_binding=require` work as-is — the app strips/translates those for asyncpg automatically |
 | `JWT_SECRET_KEY` / `SECRET_KEY` | Random secrets — generate with `openssl rand -hex 32` |
-| `REDIS_URL` | Celery broker/result backend |
-| `CHROMA_HOST` / `CHROMA_PORT` | ChromaDB for judgment RAG |
-| `MINIO_ENDPOINT` / `MINIO_ACCESS_KEY` / `MINIO_SECRET_KEY` | Evidence/document object storage |
-| `UPLOAD_FOLDER`, `PORT` | Local temp-file path and backend listen port |
+| `REDIS_URL` | Celery broker/result backend (e.g. an Upstash Redis URL in production) |
+| `CHROMA_HOST` / `CHROMA_PORT` | Point at a real ChromaDB server for judgment RAG. **Leave `CHROMA_HOST` empty** to use an embedded on-disk store instead — no separate service needed, used for free-tier deploys |
+| `MINIO_ENDPOINT` / `MINIO_ACCESS_KEY` / `MINIO_SECRET_KEY` / `MINIO_SECURE` | Evidence/document object storage — local MinIO, or any S3-compatible provider (e.g. Cloudflare R2; set `MINIO_SECURE=true` for R2/S3, which require HTTPS) |
+| `UPLOAD_FOLDER`, `PORT` | Local temp-file path and backend listen port (`PORT` is injected automatically on Render) |
 | `NEXT_PUBLIC_API_URL` | Frontend → backend base URL |
 
 **Never commit `.env`.** It's already gitignored.
@@ -311,6 +345,12 @@ GET  /api/v1/admin/system-status              Real infra health check (admin onl
 
 ## Production Deployment
 
+The current, tested target is **Render + Neon + Upstash + Cloudflare R2** —
+chosen specifically to fit free/low-cost tiers (the backend image drops all
+heavy local ML dependencies; see [Technology Stack](#technology-stack)). A
+`railway.toml` is still present for anyone who prefers Railway instead, but
+it isn't the maintained path and isn't documented step-by-step below.
+
 ### Frontend → Vercel
 
 ```bash
@@ -318,41 +358,51 @@ cd frontend
 npm i -g vercel
 vercel login
 vercel link
-vercel env add NEXT_PUBLIC_API_URL production   # https://<your-backend>.up.railway.app/api/v1
+vercel env add NEXT_PUBLIC_API_URL production   # https://<your-backend>.onrender.com/api/v1
 vercel --prod
 ```
 
 `frontend/vercel.json` is preconfigured for the Next.js build.
 
-### Backend + Postgres → Railway
+### Database → Neon, Cache → Upstash, Storage → Cloudflare R2
 
-```bash
-npm i -g @railway/cli
-railway login
-railway init
-railway add --database postgres
-railway up   # deploys backend/ using backend/Dockerfile
-```
+Provision these first, then wire their connection details into the backend's
+env vars in the next step:
 
-Set these variables in the Railway service (Settings → Variables):
-`GEMINI_API_KEY`, `JWT_SECRET_KEY`, `SECRET_KEY`, `ALLOWED_ORIGINS`
-(include your Vercel URL), plus `REDIS_URL`/`CHROMA_HOST`/`MINIO_*` pointed
-at managed equivalents (see below). Railway injects `DATABASE_URL` and
-`PORT` automatically — the Dockerfile's `CMD` already binds `${PORT}`.
+- **[Neon](https://neon.tech)** — create a project, copy the pooled connection
+  string as `DATABASE_URL` (with the `postgresql+asyncpg://` scheme).
+  Neon's `?sslmode=require&channel_binding=require` query params are handled
+  automatically — no manual URL editing needed (see `app/core/database.py`).
+- **[Upstash](https://upstash.com)** — create a Redis database, copy its
+  connection string as `REDIS_URL`.
+- **[Cloudflare R2](https://developers.cloudflare.com/r2/)** — create a bucket
+  and an R2 API token. Set `MINIO_ENDPOINT` to the R2 S3 endpoint
+  (`<account-id>.r2.cloudflarestorage.com`), `MINIO_ACCESS_KEY` /
+  `MINIO_SECRET_KEY` from the token, and `MINIO_SECURE=true` (R2 requires
+  HTTPS).
 
-**Supporting services on Railway** (no managed plugins exist for these —
-each needs its own Railway service from the public Docker image, or an
-external managed alternative):
-- **Redis**: deploy the `redis:7-alpine` image as a Railway service, or use Railway's Redis template.
-- **ChromaDB**: deploy `chromadb/chroma:0.5.23` as a Railway service.
-- **Object storage**: deploy `minio/minio` as a Railway service, **or** point
-  `MINIO_ENDPOINT`/`MINIO_ACCESS_KEY`/`MINIO_SECRET_KEY` at a real
-  S3-compatible provider (AWS S3, Cloudflare R2, Backblaze B2) — the `minio`
-  Python client works against any S3-compatible endpoint.
-- **Celery worker + beat**: deploy `backend/Dockerfile` again as two more
-  Railway services with start commands
-  `celery -A app.worker worker --loglevel=info -Q default,ai,documents,notifications`
-  and `celery -A app.worker beat --loglevel=info`.
+### Backend → Render
+
+Create a new Web Service pointed at this repo with `backend/Dockerfile` as
+the build. Render injects `PORT` automatically — the Dockerfile's `CMD`
+already binds `${PORT}` and defaults to a single uvicorn worker
+(`WEB_CONCURRENCY=1`) to fit a 512MB instance.
+
+Set these environment variables on the service: `GEMINI_API_KEY`,
+`JWT_SECRET_KEY`, `SECRET_KEY`, `ALLOWED_ORIGINS` (include your Vercel URL),
+`DATABASE_URL` (Neon), `REDIS_URL` (Upstash), `MINIO_ENDPOINT` /
+`MINIO_ACCESS_KEY` / `MINIO_SECRET_KEY` / `MINIO_SECURE=true` (R2).
+**Leave `CHROMA_HOST` unset** — the app falls back to an embedded, on-disk
+ChromaDB store with no separate vector-database service to provision.
+
+This single-service deployment does not run a Celery worker: PDF/DOCX
+export and AI calls execute inline on the request thread
+(`asyncio.to_thread`), not through the task queue. `app/tasks/` and
+`docker-compose.yml`'s `worker`/`beat` services exist for local development
+and future horizontal scaling, but nothing in the current codebase actually
+dispatches to them (`app/services/ai_service.py`'s Gemini calls and
+`app/tasks/doc_tasks.py`'s renderers run directly) — so no extra Render
+service is required for the app to function as shipped.
 
 ### Verify production builds locally before deploying
 
@@ -399,7 +449,7 @@ crimegpt-x/
 │   └── src/
 │       ├── app/                    # dashboard, cases, fir, legal, judgments, evidence, documents, diary, cyber, analytics, admin, login
 │       ├── components/
-│       ├── lib/                    # api.ts, store.ts, utils.ts
+│       ├── lib/                    # api.ts, store.ts, utils.ts, i18n.ts (EN/HI/GU), demo/ (mock data layer)
 │       └── types/
 ├── scripts/
 │   ├── init_db.sql                 # DB init + initial accounts
