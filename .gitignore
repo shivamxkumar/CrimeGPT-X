@@ -60,6 +60,8 @@ uploads/
 *.png
 *.mp4
 *.mp3
+# Intentional static asset — the sample FIR served for demo-mode OCR testing
+!frontend/public/sample-fir.pdf
 
 # Alembic
 alembic/versions/*.pyc

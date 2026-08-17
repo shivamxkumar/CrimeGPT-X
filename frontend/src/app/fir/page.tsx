@@ -7,11 +7,12 @@ import { motion } from 'framer-motion'
 import { firAPI } from '@/lib/api'
 import {
   FileText, CheckCircle, Upload, Sparkles, Hash, CalendarDays, User,
-  Phone, MapPin, IndianRupee, UserX, Building2, Tag, FileX2,
+  Phone, MapPin, IndianRupee, UserX, Building2, Tag, FileX2, Download,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import toast from 'react-hot-toast'
 import Link from 'next/link'
+import { useAuthStore } from '@/lib/store'
 import { useT } from '@/lib/i18n'
 
 interface ExtractedFields { fir_number?:string; date?:string; complainant_name?:string; phone?:string; address?:string; amount?:string; accused_name?:string; police_station?:string }
@@ -30,6 +31,7 @@ const OCR_STEPS = ['Scanning document layout...', 'Running text recognition...',
 
 export default function FIRPage() {
   const t = useT()
+  const isDemoMode = useAuthStore(s => s.isDemoMode)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [extracted, setExtracted] = useState<ExtractedFields | null>(null)
@@ -80,6 +82,17 @@ export default function FIRPage() {
   return (
     <AppShell>
       <PageHeader title={t('fir.title')} subtitle={t('fir.subtitle')} />
+
+      {isDemoMode && (
+        <Alert variant="info" icon="📄">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <span>No FIR handy? Download a sample and drop it below to see real OCR field extraction in action.</span>
+            <a href="/sample-fir.pdf" download="Sample-FIR.pdf">
+              <Button size="sm" variant="secondary"><Download size={13} /> Download Sample FIR</Button>
+            </a>
+          </div>
+        </Alert>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* Left: Original document preview / dropzone */}
