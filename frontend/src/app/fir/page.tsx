@@ -12,8 +12,6 @@ import {
 import type { LucideIcon } from 'lucide-react'
 import toast from 'react-hot-toast'
 import Link from 'next/link'
-import { useAuthStore } from '@/lib/store'
-import DemoDisabledNotice from '@/components/layout/DemoDisabledNotice'
 import { useT } from '@/lib/i18n'
 
 interface ExtractedFields { fir_number?:string; date?:string; complainant_name?:string; phone?:string; address?:string; amount?:string; accused_name?:string; police_station?:string }
@@ -32,7 +30,6 @@ const OCR_STEPS = ['Scanning document layout...', 'Running text recognition...',
 
 export default function FIRPage() {
   const t = useT()
-  const isDemoMode = useAuthStore(s => s.isDemoMode)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [extracted, setExtracted] = useState<ExtractedFields | null>(null)
@@ -79,15 +76,6 @@ export default function FIRPage() {
 
   const isImage = file?.type.startsWith('image/')
   const isPdf = file?.type === 'application/pdf'
-
-  if (isDemoMode) {
-    return (
-      <AppShell>
-        <PageHeader title={t('fir.title')} subtitle={t('fir.subtitle')} />
-        <DemoDisabledNotice feature="FIR upload" />
-      </AppShell>
-    )
-  }
 
   return (
     <AppShell>
